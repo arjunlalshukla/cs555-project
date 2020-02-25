@@ -1,0 +1,44 @@
+
+Members:
+
+Grade:   /100 
+
+Late penalty:
+
+Testing:
+    -Build:  
+    -Basic operation: 
+        -Chat server:
+            -Basic functionality (60 points):
+                -connect:
+                -list:
+                -nick:
+                -join:
+                -leave:
+                -stats:
+                -help:
+                -quit:
+            -Multi-threaded with max thread limit (extra credit for undergrads, +10 points)):
+            -Client GUI (+10 extra credit):
+
+        -File sync:
+            -Use of fssrc file:
+            -File add:
+            -File deletes:
+            -Extra credit:
+                -Multithreaded file sync (+10 points, extra credit for undergraduates):
+                -Synchronized subfolders (+10 points, extra credit):
+
+    -Auto self destruct (5 points):   
+    -Shutdown hook (5 points):
+
+Demonstration of functionality:
+    -Demo video (10 points):
+
+Code style and documentation: 
+    -README (10 points):
+    -Using OO protocol (10 points):  
+    -Javadocs:
+
+Comments:
+
