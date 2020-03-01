@@ -26,6 +26,17 @@ object FileSync {
 }
 
 final class Client(args: Vector[String]) {
+  if (args.length != 2) {
+    FileSync.error(FileSync.usage)
+  }
+  val syncServer = args(0)
+  val syncFolder = new File(args(1))
+
+  if (syncFolder.exists && !syncFolder.isDirectory){
+    FileSync.error("sync folder must be a directory")
+  }else if (!syncFolder.exists){
+    syncFolder.mkdir
+  }
 
 }
 
