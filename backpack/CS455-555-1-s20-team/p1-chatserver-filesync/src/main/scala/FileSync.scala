@@ -2,22 +2,26 @@ import java.io.File
 
 import scala.io.Source
 
-object FileSync extends App {
-  val usage = """
+object FileSync {
+
+  val usage: String = """
     |usage:
     |scala FileSync -client <serverhost> <localfolder>
     |or
     |scala FileSync -server <folder>
     |""".stripMargin
-  args.headOption match {
-    case Some("-client") => new Client(args.tail.toVector)
-    case Some("-server") => new Server(args.tail.toVector)
-    case _ => println(usage)
-  }
 
   def error(msg: String): Unit = {
     println(msg)
     System.exit(1)
+  }
+
+  def main(args: Array[String]): Unit = {
+    args.headOption match {
+      case Some("-client") => new Client(args.tail.toVector)
+      case Some("-server") => new Server(args.tail.toVector)
+      case _ => println(usage)
+    }
   }
 }
 
@@ -28,12 +32,7 @@ final class Client(args: Vector[String]) {
 //noinspection SpellCheckingInspection
 final class Server(args: Vector[String]) {
   if (args.length != 1) {
-    FileSync.error("""
-      |usage:
-      |scala FileSync -client <serverhost> <localfolder>
-      |or
-      |scala FileSync -server <folder>
-      |""".stripMargin)
+    FileSync.error(FileSync.usage)
   }
 
   val syncdir = new File(args(0))
