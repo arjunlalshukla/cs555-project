@@ -60,7 +60,7 @@ final class Server(args: Vector[String]) {
 
   private[this] val fssrckeys = fssrclines.map { line =>
     val kv = line.split("=")
-    kv(0).trim -> kv(0).trim
+    kv(0).trim -> kv.lift(1).getOrElse("").trim
   }.toMap
 
   val clientlist: Seq[String] = fssrckeys.get("clientlist") match {
@@ -71,7 +71,7 @@ final class Server(args: Vector[String]) {
   val interval: Int = fssrckeys.get("interval") match {
     case None | Some("") => 60
     case Some(a) =>
-      if (a.matches("\\d+")) {
+      if (a.matches("\\d*")) {
         a.toInt
       } else {
         -1
@@ -86,7 +86,7 @@ final class Server(args: Vector[String]) {
   val timeout: Int = fssrckeys.get("timeout") match {
     case None | Some("") => 900
     case Some(a) =>
-      if (a.matches("\\d+")) {
+      if (a.matches("\\d*")) {
         a.toInt
       } else {
         -1
@@ -100,4 +100,6 @@ final class Server(args: Vector[String]) {
   } else if (logfile.exists && logfile.isDirectory) {
     FileSync.error("Log file cannot be a directory")
   }
+  
+
 }
