@@ -100,6 +100,11 @@ final class Server(args: Vector[String]) {
   } else if (logfile.exists && logfile.isDirectory) {
     FileSync.error("Log file cannot be a directory")
   }
-  
+
+  println("Server configuration parameters:")
+  println(s"clientlist: ${clientlist.mkString(", ")}")
+  println(s"timeout: $timeout")
+  println(s"logfile: $logfile")
+  println(s"interval: $interval")
 
 }
