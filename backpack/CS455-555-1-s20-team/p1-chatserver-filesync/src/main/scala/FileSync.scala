@@ -29,7 +29,7 @@ final class Client(args: Vector[String]) {
   if (args.length != 2) {
     FileSync.error(FileSync.usage)
   }
-  val syncServer = args(0)
+  val syncServer: String = args(0)
   val syncFolder = new File(args(1))
 
   if (syncFolder.exists && !syncFolder.isDirectory){
@@ -104,7 +104,7 @@ final class Server(args: Vector[String]) {
       }
   }
 
-  val invalids = fssrckeys.keys.filter(Server.validKeys.contains)
+  private[this] val invalids = fssrckeys.keys.filter(Server.validKeys.contains)
   if (interval == -1) {
     FileSync.error("interval must be a positive integer")
   } else if (timeout == -1) {
@@ -123,5 +123,7 @@ final class Server(args: Vector[String]) {
   println(s"interval: $interval")
 }
 object Server {
-  val validKeys = Vector("clientlist", "interval", "logfile", "timeout")
+  val validKeys = Set("clientlist", "interval", "logfile", "timeout")
+  // our group's valid ports
+  val validPorts = Set(5190, 5191, 5192, 5193, 5194)
 }
