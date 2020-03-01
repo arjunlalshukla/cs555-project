@@ -104,12 +104,16 @@ final class Server(args: Vector[String]) {
       }
   }
 
+  val invalids = fssrckeys.keys.filter(Server.validKeys.contains)
   if (interval == -1) {
     FileSync.error("interval must be a positive integer")
   } else if (timeout == -1) {
     FileSync.error("timeout must be a positive integer")
   } else if (logfile.exists && logfile.isDirectory) {
     FileSync.error("Log file cannot be a directory")
+  } else if (invalids.nonEmpty){
+    FileSync.error(s"these keys given in the fssrc file are invalid: " +
+      invalids.map("\"" + _ + "\"" ).mkString(", "))
   }
 
   println("Server configuration parameters:")
@@ -117,5 +121,7 @@ final class Server(args: Vector[String]) {
   println(s"timeout: $timeout")
   println(s"logfile: $logfile")
   println(s"interval: $interval")
-
+}
+object Server {
+  val validKeys = Vector("clientlist", "interval", "logfile", "timeout")
 }
