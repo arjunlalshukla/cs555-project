@@ -1,4 +1,6 @@
-import java.io.File
+import java.io.{File, InputStream, ObjectInputStream, ObjectOutputStream}
+import java.net.Socket
+import java.net.ServerSocket
 
 import scala.io.Source
 
@@ -29,14 +31,20 @@ final class Client(args: Vector[String]) {
   if (args.length != 2) {
     FileSync.error(FileSync.usage)
   }
+  val port: Int = Server.validPorts(0)
   val syncServer: String = args(0)
-  val syncFolder = new File(args(1))
+  val syncFolder: File = new File(args(1))
 
   if (syncFolder.exists && !syncFolder.isDirectory){
     FileSync.error("sync folder must be a directory")
   }else if (!syncFolder.exists){
     syncFolder.mkdir
   }
+
+  val s = new Socket(syncServer, port)
+  val in: InputStream = s.getInputStream
+  val oin = new ObjectInputStream(in)
+
 
 }
 
@@ -46,9 +54,10 @@ final class Server(args: Vector[String]) {
     FileSync.error(FileSync.usage)
   }
 
-  val syncdir = new File(args(0))
-  val fssdir = new File(".fss")
-  val fssrc = new File(".fss/fssrc")
+  val port: Int = Server.validPorts(0)
+  val syncdir: File = new File(args(0))
+  val fssdir: File = new File(".fss")
+  val fssrc: File = new File(".fss/fssrc")
 
   if (!syncdir.exists || !syncdir.isDirectory) {
     FileSync.error("folder given must exist and be a directory")
@@ -104,7 +113,7 @@ final class Server(args: Vector[String]) {
       }
   }
 
-  private[this] val invalids = fssrckeys.keys.filter(Server.validKeys.contains)
+  private[this] val invalids = fssrckeys.keys.filter(!Server.validKeys.contains(_))
   if (interval == -1) {
     FileSync.error("interval must be a positive integer")
   } else if (timeout == -1) {
@@ -121,9 +130,33 @@ final class Server(args: Vector[String]) {
   println(s"timeout: $timeout")
   println(s"logfile: $logfile")
   println(s"interval: $interval")
+
+  private[this] val s = new ServerSocket(port)
+  while (true){
+      serveClient(s.accept)
+  }
+
+  //serveClients
+  def serveClient(socket: Socket): Unit = {
+
+    val out = socket.getOutputStream
+    val in = socket.getInputStream
+
+    // Note that client gets a temporary/transient port on it's side
+    // to talk to the server on its well known port
+    System.out.println(
+      "Received connect from " + socket.getInetAddress.getHostAddress + ": " + socket.getPort)
+
+    val oout = new ObjectOutputStream(out)
+    oout.writeObject(new java.util.Date)
+    oout.flush()
+
+    socket.close()
+  }
 }
+
 object Server {
   val validKeys = Set("clientlist", "interval", "logfile", "timeout")
   // our group's valid ports
-  val validPorts = Set(5190, 5191, 5192, 5193, 5194)
+  val validPorts = Vector(5190, 5191, 5192, 5193, 5194)
 }
