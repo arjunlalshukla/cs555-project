@@ -44,6 +44,12 @@ final class Client(args: Vector[String]) {
   val s = new Socket(syncServer, port)
   val in: InputStream = s.getInputStream
   val oin = new ObjectInputStream(in)
+  val accepted: Boolean = oin.readBoolean
+  if (accepted){
+    println(s"connected to server $syncServer")
+  }else{
+    println(s"could not connect to server $syncServer, unauthorized")
+  }
 
 
 }
@@ -139,19 +145,21 @@ final class Server(args: Vector[String]) {
   //serveClients
   def serveClient(socket: Socket): Unit = {
 
-    val out = socket.getOutputStream
-    val in = socket.getInputStream
-
     // Note that client gets a temporary/transient port on it's side
     // to talk to the server on its well known port
-    System.out.println(
-      "Received connect from " + socket.getInetAddress.getHostAddress + ": " + socket.getPort)
+//    println(
+//      "Received connect from " + socket.getInetAddress.getHostAddress + ": " + socket.getPort)
 
-    val oout = new ObjectOutputStream(out)
-    oout.writeObject(new java.util.Date)
+    val oout = new ObjectOutputStream(socket.getOutputStream)
+    val accepted = clientlist.contains(socket.getInetAddress.getHostName)
+    oout.writeBoolean(accepted)
     oout.flush()
-
-    socket.close()
+    if (accepted){
+      println("Accepted connect from " + socket.getInetAddress.getHostAddress + ": " + socket.getPort)
+    }else{
+      println("Rejected connect from " + socket.getInetAddress.getHostAddress + ": " + socket.getPort)
+      socket.close()
+    }
   }
 }
 
