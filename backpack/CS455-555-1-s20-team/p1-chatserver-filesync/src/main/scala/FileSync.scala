@@ -2,6 +2,7 @@ import java.io.{File, InputStream, ObjectInputStream, ObjectOutputStream}
 import java.net.Socket
 import java.net.ServerSocket
 
+import scala.collection.mutable.ListBuffer
 import scala.io.Source
 
 object FileSync {
@@ -13,31 +14,30 @@ object FileSync {
     |scala FileSync -server <folder>
     |""".stripMargin
 
-  def error(msg: String): Unit = {
-    println(msg)
-    System.exit(1)
-  }
-
   def main(args: Array[String]): Unit = {
-    args.headOption match {
-      case Some("-client") => new Client(args.tail.toVector)
-      case Some("-server") => new Server(args.tail.toVector)
-      case _ => println(usage)
+    try {
+      args.headOption match {
+        case Some("-client") => new Client(args.tail.toSeq)
+        case Some("-server") => new Server(args.tail.toSeq)
+        case _ => println(usage)
+      }
+    } catch {
+      case e: FileSyncException => println(e.getMessage)
     }
   }
 }
 
-final class Client(args: Vector[String]) {
+final class Client(args: Seq[String]) {
   if (args.length != 2) {
-    FileSync.error(FileSync.usage)
+    throw new FileSyncException(Seq(FileSync.usage))
   }
-  val port: Int = Server.validPorts(0)
-  val syncServer: String = args(0)
+  val port: Int = Server.validPorts.head
+  val syncServer: String = args.head
   val syncFolder: File = new File(args(1))
 
   if (syncFolder.exists && !syncFolder.isDirectory){
-    FileSync.error("sync folder must be a directory")
-  }else if (!syncFolder.exists){
+    throw new FileSyncException(Seq("sync folder must be a directory"))
+  } else if (!syncFolder.exists){
     syncFolder.mkdir
   }
 
@@ -55,24 +55,29 @@ final class Client(args: Vector[String]) {
 }
 
 //noinspection SpellCheckingInspection
-final class Server(args: Vector[String]) {
+final class Server(args: Seq[String]) {
   if (args.length != 1) {
-    FileSync.error(FileSync.usage)
+    throw new FileSyncException(Seq(FileSync.usage))
   }
 
-  val port: Int = Server.validPorts(0)
-  val syncdir: File = new File(args(0))
+  val port: Int = Server.validPorts.head
+  val syncdir: File = new File(args.head)
   val fssdir: File = new File(".fss")
   val fssrc: File = new File(".fss/fssrc")
+  private[this] val errors = new ListBuffer[String]
 
   if (!syncdir.exists || !syncdir.isDirectory) {
-    FileSync.error("folder given must exist and be a directory")
+    errors.append("folder given must exist and be a directory")
   } else if (syncdir.listFiles.exists(_.isDirectory)) {
-    FileSync.error("folder given cannot contain subdirectories")
-  } else if (!fssdir.exists || !fssdir.isDirectory) {
-    FileSync.error("The .fss file must exist and be a directory")
+    errors.append("folder given cannot contain subdirectories")
+  }
+  if (!fssdir.exists || !fssdir.isDirectory) {
+    errors.append("The .fss file must exist and be a directory")
   } else if (!fssrc.exists || fssrc.isDirectory) {
-    FileSync.error("The fssrc file must exists and not be a directory")
+    errors.append("The fssrc file must exists and not be a directory")
+  }
+  if (errors.nonEmpty) {
+    throw new FileSyncException(errors.toSeq)
   }
 
   private[this] val rcsrc = Source.fromFile(fssrc.getAbsolutePath)
@@ -81,7 +86,8 @@ final class Server(args: Vector[String]) {
   rcsrc.close
 
   if (fssrclines.map(_.filter(_ == '=').length).exists(_ != 1)) {
-    FileSync.error("fssrc must contain key value pairs with one equals per line")
+    throw new FileSyncException(
+      Seq("fssrc must contain key value pairs with one equals per line"))
   }
 
   private[this] val fssrckeys = fssrclines.map { line =>
@@ -121,14 +127,20 @@ final class Server(args: Vector[String]) {
 
   private[this] val invalids = fssrckeys.keys.filter(!Server.validKeys.contains(_))
   if (interval == -1) {
-    FileSync.error("interval must be a positive integer")
-  } else if (timeout == -1) {
-    FileSync.error("timeout must be a positive integer")
-  } else if (logfile.exists && logfile.isDirectory) {
-    FileSync.error("Log file cannot be a directory")
-  } else if (invalids.nonEmpty){
-    FileSync.error(s"these keys given in the fssrc file are invalid: " +
+    errors.append("interval must be a positive integer")
+  }
+  if (timeout == -1) {
+    errors.append("timeout must be a positive integer")
+  }
+  if (logfile.exists && logfile.isDirectory) {
+    errors.append("Log file cannot be a directory")
+  }
+  if (invalids.nonEmpty){
+    errors.append(s"these keys given in the fssrc file are invalid: " +
       invalids.map("\"" + _ + "\"" ).mkString(", "))
+  }
+  if (errors.nonEmpty) {
+    throw new FileSyncException(errors.toSeq)
   }
 
   println("Server configuration parameters:")
@@ -166,5 +178,8 @@ final class Server(args: Vector[String]) {
 object Server {
   val validKeys = Set("clientlist", "interval", "logfile", "timeout")
   // our group's valid ports
-  val validPorts = Vector(5190, 5191, 5192, 5193, 5194)
+  val validPorts = Seq(5190, 5191, 5192, 5193, 5194)
 }
+
+final class FileSyncException(val msgs: Seq[String])
+  extends Exception(msgs.mkString("\n"))
