@@ -47,12 +47,17 @@ final class Client(args: Seq[String]) {
   val accepted: Boolean = oin.readBoolean
   if (accepted){
     println(s"connected to server $syncServer")
+    //generate list of files in syncFolder
+    val fileList = syncFolder.listFiles.map { file =>
+
+    }
+
+
   }else{
     println(s"could not connect to server $syncServer, unauthorized")
   }
-
-
 }
+
 
 //noinspection SpellCheckingInspection
 final class Server(args: Seq[String]) {
