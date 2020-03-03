@@ -1,7 +1,6 @@
 import java.io.{File, InputStream, ObjectInputStream, ObjectOutputStream}
 import java.net.Socket
 import java.net.ServerSocket
-import java.util.Date
 
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
@@ -50,9 +49,11 @@ final class Client(args: Seq[String]) {
     println(s"connected to server $syncServer")
     //generate list of files in syncFolder
     val fileList = syncFolder.listFiles.map { file =>
-
-    }
-
+      FileToSync(file.getName, file.lastModified, file.length)
+    }.toSeq
+    val oout = new ObjectOutputStream(s.getOutputStream)
+    oout.writeObject(fileList)
+    oout.flush()
 
   }else{
     println(s"could not connect to server $syncServer, unauthorized")
@@ -176,7 +177,9 @@ final class Server(args: Seq[String]) {
   }
 
   def serve(socket: Socket): Unit = {
-
+    val oin = new ObjectInputStream(socket.getInputStream)
+    val clientFileList = oin.readObject.asInstanceOf[Seq[FileToSync]]
+    println(clientFileList.mkString(", "))
   }
 }
 object Server {
@@ -188,4 +191,4 @@ object Server {
 final class FileSyncException(val msgs: Seq[String])
   extends Exception(msgs.mkString("\n"))
 
-case class FileToSync(fn: String, ts: Date, size: Long)
+case class FileToSync(fn: String, ts: Long, size: Long)
