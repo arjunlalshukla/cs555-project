@@ -1,6 +1,7 @@
 import java.io.{File, InputStream, ObjectInputStream, ObjectOutputStream}
 import java.net.Socket
 import java.net.ServerSocket
+import java.util.Date
 
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
@@ -173,7 +174,6 @@ final class Server(args: Seq[String]) {
 
   }
 }
-
 object Server {
   val validKeys = Set("clientlist", "interval", "logfile", "timeout")
   // our group's valid ports
@@ -182,3 +182,5 @@ object Server {
 
 final class FileSyncException(val msgs: Seq[String])
   extends Exception(msgs.mkString("\n"))
+
+case class FileToSync(fn: String, ts: Date, size: Long)
