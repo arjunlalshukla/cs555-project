@@ -100,14 +100,14 @@ final class Server(args: Seq[String]) {
     kv(0).trim -> kv.lift(1).getOrElse("").trim
   }.toMap
 
-  val clientlist: Seq[String] = fssrckeys.get("clientlist") match {
-    case None | Some("") => Vector("localhost")
-    case Some(a) => a.split(",").map(_.trim).toVector
+  val clientlist: Set[String] = fssrckeys.getOrElse("clientlist", "") match {
+    case "" => Set("localhost")
+    case a => a.split(",").map(_.trim).toSet
   }
 
-  val interval: Int = fssrckeys.get("interval") match {
-    case None | Some("") => 60
-    case Some(a) =>
+  val interval: Int = fssrckeys.getOrElse("interval", "") match {
+    case "" => 60
+    case a =>
       if (a.matches("\\d*")) {
         a.toInt
       } else {
@@ -115,14 +115,14 @@ final class Server(args: Seq[String]) {
       }
   }
 
-  val logfile: File = fssrckeys.get("logfile") match {
-    case None | Some("") => new File(fssdir.getAbsolutePath + "/log")
-    case Some(a) => new File(a)
+  val logfile: File = fssrckeys.getOrElse("logfile", "") match {
+    case "" => new File(fssdir.getAbsolutePath + "/log")
+    case a => new File(a)
   }
 
-  val timeout: Int = fssrckeys.get("timeout") match {
-    case None | Some("") => 900
-    case Some(a) =>
+  val timeout: Int = fssrckeys.getOrElse("timeout", "") match {
+    case "" => 900
+    case a =>
       if (a.matches("\\d*")) {
         a.toInt
       } else {
@@ -156,27 +156,26 @@ final class Server(args: Seq[String]) {
 
   private[this] val s = new ServerSocket(port)
   while (true){
-      serveClient(s.accept)
+    processClient(s.accept)
   }
 
   //serveClients
-  def serveClient(socket: Socket): Unit = {
-
-    // Note that client gets a temporary/transient port on it's side
-    // to talk to the server on its well known port
-//    println(
-//      "Received connect from " + socket.getInetAddress.getHostAddress + ": " + socket.getPort)
-
+  def processClient(socket: Socket): Unit = {
     val oout = new ObjectOutputStream(socket.getOutputStream)
     val accepted = clientlist.contains(socket.getInetAddress.getHostName)
     oout.writeBoolean(accepted)
     oout.flush()
     if (accepted){
       println("Accepted connect from " + socket.getInetAddress.getHostAddress + ": " + socket.getPort)
+      serve(socket)
     }else{
       println("Rejected connect from " + socket.getInetAddress.getHostAddress + ": " + socket.getPort)
-      socket.close()
     }
+    socket.close()
+  }
+
+  def serve(socket: Socket): Unit = {
+
   }
 }
 
