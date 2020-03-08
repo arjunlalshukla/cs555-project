@@ -49,13 +49,12 @@ final class Client(args: Seq[String]) {
     println(s"connected to server $syncServer")
     //generate list of files in syncFolder
     val fileList = syncFolder.listFiles.map { file =>
-      FileToSync(file.getName, file.lastModified, file.length)
-    }.toSeq
+      file.getName -> FileProperties(file.lastModified, file.length)
+    }.toMap
     val oout = new ObjectOutputStream(s.getOutputStream)
     oout.writeObject(fileList)
     oout.flush()
-
-  }else{
+  } else{
     println(s"could not connect to server $syncServer, unauthorized")
   }
 }
@@ -178,7 +177,7 @@ final class Server(args: Seq[String]) {
 
   def serve(socket: Socket): Unit = {
     val oin = new ObjectInputStream(socket.getInputStream)
-    val clientFileList = oin.readObject.asInstanceOf[Seq[FileToSync]]
+    val clientFileList = oin.readObject.asInstanceOf[Map[String, FileProperties]]
     println(clientFileList.mkString(", "))
   }
 }
@@ -192,3 +191,4 @@ final class FileSyncException(val msgs: Seq[String])
   extends Exception(msgs.mkString("\n"))
 
 case class FileToSync(fn: String, ts: Long, size: Long)
+case class FileProperties(ts: Long, size: Long)
