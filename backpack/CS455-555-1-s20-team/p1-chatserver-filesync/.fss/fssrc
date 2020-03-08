@@ -1,0 +1,3 @@
+timeout=2
+interval=0
+clientlist=localhost,127.0.0.1
