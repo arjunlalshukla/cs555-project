@@ -178,7 +178,15 @@ final class Server(args: Seq[String]) {
   def serve(socket: Socket): Unit = {
     val oin = new ObjectInputStream(socket.getInputStream)
     val clientFileList = oin.readObject.asInstanceOf[Map[String, FileProperties]]
-    println(clientFileList.mkString(", "))
+    val serverFileList = syncdir.listFiles.map { file =>
+      file.getName -> FileProperties(file.lastModified, file.length)
+    }.toMap
+    val delete = clientFileList.keySet diff serverFileList.keySet
+    val update = serverFileList.keySet diff clientFileList.keySet union
+      (serverFileList.keySet intersect clientFileList.keySet)
+        .filter(s => serverFileList(s) != clientFileList(s))
+    println(s"To delete: ${delete.mkString(", ")}")
+    println(s"To update: ${update.mkString(", ")}")
   }
 }
 object Server {
