@@ -1,6 +1,6 @@
 import java.io.{File, ObjectInputStream, ObjectOutputStream}
-import java.net.Socket
-import java.net.ServerSocket
+import java.net.{ServerSocket, Socket}
+import java.nio.file.{Files, Paths}
 
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
@@ -45,18 +45,32 @@ final class Client(args: Seq[String]) {
 
   println("connected and built IO")
   val accepted: Boolean = io.in.readBoolean
+  private[this] val get_path = (s: String) => Paths.get(syncFolder.getAbsolutePath, s)
   if (accepted){
     println(s"connected to server $syncServer")
     //generate list of files in syncFolder
     val fileList = syncFolder.listFiles.map { file =>
       file.getName -> FileProperties(file.lastModified, file.length)
     }.toMap
-    io.out.writeObject(fileList)
-    io.out.flush()
-    val delete = io.in.readObject.asInstanceOf[Set[String]]
-    val update = io.in.readObject.asInstanceOf[Set[String]]
-    println(s"To delete: ${delete.mkString(", ")}")
-    println(s"To update: ${update.mkString(", ")}")
+    io.write(fileList)
+    val delete = io.read[Set[String]]
+    val update = io.read[Set[String]]
+    println(s"To delete:\n ${delete.mkString("\n")}")
+    println(s"To update:\n ${update.mkString("\n")}")
+    delete.foreach { path =>
+      get_path(path).toFile.delete()
+      println(s"deleted ${path.toString}")
+    }
+    update.foreach { path =>
+      io.write(Some(path))
+      val contents = io.read[FileContents]
+      val file = get_path(path).toFile
+      Files.write(file.toPath, contents.bytes)
+      file.setLastModified(contents.ts)
+      println(s"Updated ${path.toString}")
+    }
+    io.write(None)
+
   } else{
     println(s"could not connect to server $syncServer, unauthorized")
   }
@@ -178,7 +192,7 @@ final class Server(args: Seq[String]) {
   }
 
   def serve(io: IOStream): Unit = {
-    val clientFileList = io.in.readObject.asInstanceOf[Map[String, FileProperties]]
+    val clientFileList = io.read[Map[String, FileProperties]]
     val serverFileList = syncdir.listFiles.map { file =>
       file.getName -> FileProperties(file.lastModified, file.length)
     }.toMap
@@ -190,11 +204,20 @@ final class Server(args: Seq[String]) {
     println(s"Server list: ${serverFileList.keys.mkString(", ")}")
     println(s"To delete: ${delete.mkString(", ")}")
     println(s"To update: ${update.mkString(", ")}")
-    io.out.writeObject(delete)
-    io.out.flush()
-    io.out.writeObject(update)
-    io.out.flush()
+    io.write(delete)
+    io.write(update)
+    processRequests(io)
   }
+
+  @scala.annotation.tailrec
+  def processRequests(io: IOStream): Unit =
+    io.read[Option[String]].map(syncdir.toPath.resolve(_).toFile) match {
+      case None =>
+      case Some(file) =>
+        println(s"writing to client: ${file.getAbsolutePath}")
+        io.write(FileContents(file.lastModified, Files.readAllBytes(file.toPath)))
+        processRequests(io)
+    }
 }
 object Server {
   val validKeys = Set("clientlist", "interval", "logfile", "timeout")
@@ -207,8 +230,14 @@ final class FileSyncException(val msgs: Seq[String])
 
 case class FileToSync(fn: String, ts: Long, size: Long)
 case class FileProperties(ts: Long, size: Long)
+case class FileContents(ts: Long, bytes: Array[Byte])
 
 case class IOStream(sock: Socket) {
   val out = new ObjectOutputStream(sock.getOutputStream)
   val in = new ObjectInputStream(sock.getInputStream)
+  def read[T]: T = in.readObject.asInstanceOf[T]
+  def write(o: AnyRef): Unit = {
+    out.writeObject(o)
+    out.flush()
+  }
 }

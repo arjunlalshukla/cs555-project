@@ -1,0 +1,4 @@
+#!/bin/sh
+cp -r test-dir/* curr-test
+sleep 1
+touch curr-test/clientTestSync/textdoc.txt
