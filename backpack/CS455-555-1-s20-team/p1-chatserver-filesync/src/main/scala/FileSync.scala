@@ -1,4 +1,4 @@
-import java.io.{File, InputStream, ObjectInputStream, ObjectOutputStream}
+import java.io.{File, ObjectInputStream, ObjectOutputStream}
 import java.net.Socket
 import java.net.ServerSocket
 
@@ -41,19 +41,22 @@ final class Client(args: Seq[String]) {
     syncFolder.mkdir
   }
 
-  val s = new Socket(syncServer, port)
-  val in: InputStream = s.getInputStream
-  val oin = new ObjectInputStream(in)
-  val accepted: Boolean = oin.readBoolean
+  val io: IOStream = IOStream(new Socket(syncServer, port))
+
+  println("connected and built IO")
+  val accepted: Boolean = io.in.readBoolean
   if (accepted){
     println(s"connected to server $syncServer")
     //generate list of files in syncFolder
     val fileList = syncFolder.listFiles.map { file =>
       file.getName -> FileProperties(file.lastModified, file.length)
     }.toMap
-    val oout = new ObjectOutputStream(s.getOutputStream)
-    oout.writeObject(fileList)
-    oout.flush()
+    io.out.writeObject(fileList)
+    io.out.flush()
+    val delete = io.in.readObject.asInstanceOf[Set[String]]
+    val update = io.in.readObject.asInstanceOf[Set[String]]
+    println(s"To delete: ${delete.mkString(", ")}")
+    println(s"To update: ${update.mkString(", ")}")
   } else{
     println(s"could not connect to server $syncServer, unauthorized")
   }
@@ -157,36 +160,40 @@ final class Server(args: Seq[String]) {
 
   private[this] val s = new ServerSocket(port)
   while (true){
-    processClient(s.accept)
+    processClient(IOStream(s.accept))
   }
 
   //serveClients
-  def processClient(socket: Socket): Unit = {
-    val oout = new ObjectOutputStream(socket.getOutputStream)
-    val accepted = clientlist.contains(socket.getInetAddress.getHostName)
-    oout.writeBoolean(accepted)
-    oout.flush()
+  def processClient(io: IOStream): Unit = {
+    val accepted = clientlist.contains(io.sock.getInetAddress.getHostName)
+    io.out.writeBoolean(accepted)
+    io.out.flush()
     if (accepted){
-      println("Accepted connect from " + socket.getInetAddress.getHostAddress + ": " + socket.getPort)
-      serve(socket)
+      println("Accepted connect from " + io.sock.getInetAddress.getHostAddress + ": " + io.sock.getPort)
+      serve(io)
     }else{
-      println("Rejected connect from " + socket.getInetAddress.getHostAddress + ": " + socket.getPort)
+      println("Rejected connect from " + io.sock.getInetAddress.getHostAddress + ": " + io.sock.getPort)
     }
-    socket.close()
+    io.sock.close()
   }
 
-  def serve(socket: Socket): Unit = {
-    val oin = new ObjectInputStream(socket.getInputStream)
-    val clientFileList = oin.readObject.asInstanceOf[Map[String, FileProperties]]
+  def serve(io: IOStream): Unit = {
+    val clientFileList = io.in.readObject.asInstanceOf[Map[String, FileProperties]]
     val serverFileList = syncdir.listFiles.map { file =>
       file.getName -> FileProperties(file.lastModified, file.length)
     }.toMap
-    val delete = clientFileList.keySet diff serverFileList.keySet
-    val update = serverFileList.keySet diff clientFileList.keySet union
+    val delete: Set[String] = clientFileList.keySet diff serverFileList.keySet
+    val update: Set[String] = serverFileList.keySet diff clientFileList.keySet union
       (serverFileList.keySet intersect clientFileList.keySet)
         .filter(s => serverFileList(s) != clientFileList(s))
+    println(s"Client list: ${clientFileList.keys.mkString(", ")}")
+    println(s"Server list: ${serverFileList.keys.mkString(", ")}")
     println(s"To delete: ${delete.mkString(", ")}")
     println(s"To update: ${update.mkString(", ")}")
+    io.out.writeObject(delete)
+    io.out.flush()
+    io.out.writeObject(update)
+    io.out.flush()
   }
 }
 object Server {
@@ -200,3 +207,8 @@ final class FileSyncException(val msgs: Seq[String])
 
 case class FileToSync(fn: String, ts: Long, size: Long)
 case class FileProperties(ts: Long, size: Long)
+
+case class IOStream(sock: Socket) {
+  val out = new ObjectOutputStream(sock.getOutputStream)
+  val in = new ObjectInputStream(sock.getInputStream)
+}
