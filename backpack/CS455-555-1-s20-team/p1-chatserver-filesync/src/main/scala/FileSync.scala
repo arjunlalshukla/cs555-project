@@ -4,6 +4,7 @@ import java.nio.file.{Files, Paths}
 
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
+import scala.jdk.StreamConverters._
 
 object FileSync {
 
@@ -49,25 +50,48 @@ final class Client(args: Seq[String]) {
   if (accepted){
     println(s"connected to server $syncServer")
     //generate list of files in syncFolder
-    val fileList = syncFolder.listFiles.map { file =>
-      file.getName -> FileProperties(file.lastModified, file.length)
-    }.toMap
+    val fileList = Files.walk(syncFolder.toPath).toScala(Set).map { path =>
+      syncFolder.toPath.relativize(path).toString ->
+        FileProperties(path.toFile.lastModified, path.toFile.length)
+    }.filter(_._1 != "").toMap
     io.write(fileList)
     val delete = io.read[Set[String]]
-    val update = io.read[Set[String]]
-    println(s"To delete:\n ${delete.mkString("\n")}")
-    println(s"To update:\n ${update.mkString("\n")}")
+    val fileUpdates = io.read[Set[String]]
+    val dirUpdates = io.read[Set[String]]
+    println(s"To delete:\n${delete.toSeq.sorted.mkString("\n")}\n")
+    println(s"Files to update:\n${fileUpdates.toSeq.sorted.mkString("\n")}\n")
+    println(s"Dirs to update:\n${dirUpdates.toSeq.sorted.mkString("\n")}\n")
+
     delete.foreach { path =>
-      get_path(path).toFile.delete()
+      val p = get_path(path)
+      // you cannot delete a directory that has files,
+      // so we set recursively walk through in reverse order,
+      // because walk() lists from the top down, depth first
+      if (p.toFile.exists) {
+        Files.walk(p).toScala(LazyList).reverse.foreach(_.toFile.delete())
+      }
       println(s"deleted ${path.toString}")
     }
-    update.foreach { path =>
+
+    fileUpdates.foreach { path =>
       io.write(Some(path))
       val contents = io.read[FileContents]
       val file = get_path(path).toFile
+      file.getParentFile.mkdirs()
       Files.write(file.toPath, contents.bytes)
       file.setLastModified(contents.ts)
       println(s"Updated ${path.toString}")
+    }
+    io.write(None)
+
+    dirUpdates.foreach { path =>
+      io.write(Some(path))
+      val ts = io.in.readLong
+      val file = get_path(path).toFile
+      file.getParentFile.mkdirs()
+      file.mkdir()
+      file.setLastModified(ts)
+      println(s"updated ${path.toString}")
     }
     io.write(None)
 
@@ -91,8 +115,6 @@ final class Server(args: Seq[String]) {
 
   if (!syncdir.exists || !syncdir.isDirectory) {
     errors.append("folder given must exist and be a directory")
-  } else if (syncdir.listFiles.exists(_.isDirectory)) {
-    errors.append("folder given cannot contain subdirectories")
   }
   if (!fssdir.exists || !fssdir.isDirectory) {
     errors.append("The .fss file must exist and be a directory")
@@ -193,30 +215,46 @@ final class Server(args: Seq[String]) {
 
   def serve(io: IOStream): Unit = {
     val clientFileList = io.read[Map[String, FileProperties]]
-    val serverFileList = syncdir.listFiles.map { file =>
-      file.getName -> FileProperties(file.lastModified, file.length)
-    }.toMap
+    val serverFileList = Files.walk(syncdir.toPath).toScala(Set).map { path =>
+      syncdir.toPath.relativize(path).toString ->
+        FileProperties(path.toFile.lastModified, path.toFile.length)
+    }.filter(_._1 != "").toMap
+    // ^ we need this filter because walk() automatically includes syncdir as
+    // and empty string
     val delete: Set[String] = clientFileList.keySet diff serverFileList.keySet
     val update: Set[String] = serverFileList.keySet diff clientFileList.keySet union
       (serverFileList.keySet intersect clientFileList.keySet)
         .filter(s => serverFileList(s) != clientFileList(s))
-    println(s"Client list: ${clientFileList.keys.mkString(", ")}")
-    println(s"Server list: ${serverFileList.keys.mkString(", ")}")
-    println(s"To delete: ${delete.mkString(", ")}")
-    println(s"To update: ${update.mkString(", ")}")
+    println(s"Client list: \n${clientFileList.keys.toSeq.sorted.mkString("\n")}\n")
+    println(s"Server list: \n${serverFileList.keys.toSeq.sorted.mkString("\n")}\n")
+    println(s"To delete: \n${delete.toSeq.sorted.mkString("\n")}\n")
+    println(s"To update: \n${update.toSeq.sorted.mkString("\n")}\n")
     io.write(delete)
-    io.write(update)
-    processRequests(io)
+    io.write(update.filterNot(syncdir.toPath.resolve(_).toFile.isDirectory))
+    io.write(update.filter(syncdir.toPath.resolve(_).toFile.isDirectory))
+    fileRequests(io)
+    dirRequests(io)
   }
 
   @scala.annotation.tailrec
-  def processRequests(io: IOStream): Unit =
+  def fileRequests(io: IOStream): Unit =
     io.read[Option[String]].map(syncdir.toPath.resolve(_).toFile) match {
       case None =>
       case Some(file) =>
-        println(s"writing to client: ${file.getAbsolutePath}")
+        println(s"writing file to client: ${file.getAbsolutePath}")
         io.write(FileContents(file.lastModified, Files.readAllBytes(file.toPath)))
-        processRequests(io)
+        fileRequests(io)
+    }
+
+  @scala.annotation.tailrec
+  def dirRequests(io: IOStream): Unit =
+    io.read[Option[String]].map(syncdir.toPath.resolve(_).toFile) match {
+      case None =>
+      case Some(file) =>
+        println(s"giving dir timestamp to client: ${file.getAbsolutePath}")
+        io.out.writeLong(file.lastModified)
+        io.out.flush()
+        dirRequests(io)
     }
 }
 object Server {
