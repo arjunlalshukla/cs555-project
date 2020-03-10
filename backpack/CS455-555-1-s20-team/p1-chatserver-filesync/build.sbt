@@ -7,6 +7,7 @@ scalaVersion := "2.13.1"
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor-typed" % "2.6.3",
   "com.lihaoyi" %% "os-lib" % "0.6.2",
-  "org.scalatest" % "scalatest_2.13" % "3.1.1" % "test"
+  "org.scalatest" % "scalatest_2.13" % "3.1.1" % "test",
+  "ch.qos.logback" % "logback-classic" % "1.1.3" % Runtime
 )
 
