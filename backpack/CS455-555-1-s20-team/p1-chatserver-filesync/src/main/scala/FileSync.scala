@@ -1,6 +1,10 @@
-import java.io.{File, ObjectInputStream, ObjectOutputStream}
+import java.io.{File, FileWriter, ObjectInputStream, ObjectOutputStream, PrintWriter}
 import java.net.{ServerSocket, Socket}
 import java.nio.file.{Files, Paths}
+import java.text.SimpleDateFormat
+import java.util.{Calendar, Locale, TimeZone}
+
+import akka.io.SimpleDnsCache
 
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
@@ -44,7 +48,6 @@ final class Client(args: Seq[String]) {
 
   val io: IOStream = IOStream(new Socket(syncServer, port))
 
-  println("connected and built IO")
   val accepted: Boolean = io.in.readBoolean
   private[this] val get_path = (s: String) => Paths.get(syncFolder.getAbsolutePath, s)
   if (accepted){
@@ -188,11 +191,18 @@ final class Server(args: Seq[String]) {
     throw new FileSyncException(errors.toSeq)
   }
 
-  println("Server configuration parameters:")
-  println(s"clientlist: ${clientlist.mkString(", ")}")
-  println(s"timeout: $timeout")
-  println(s"logfile: $logfile")
-  println(s"interval: $interval")
+  if (logfile.exists) {
+    logfile.delete
+  }
+
+  //Setup Logfile stuff, write initial entry that server is starting up
+  private[this] val logMessages = new ListBuffer[String]
+  logMessages.append("Server configuration parameters:")
+  logMessages.append(s"clientlist: ${clientlist.mkString(", ")}")
+  logMessages.append(s"timeout: $timeout")
+  logMessages.append(s"logfile: $logfile")
+  logMessages.append(s"interval: $interval")
+  appendToLog(logMessages.toSeq.mkString("\n"))
 
   private[this] val s = new ServerSocket(port)
   while (true){
@@ -201,14 +211,16 @@ final class Server(args: Seq[String]) {
 
   //serveClients
   def processClient(io: IOStream): Unit = {
-    val accepted = clientlist.contains(io.sock.getInetAddress.getHostName)
+    val accepted = clientlist.contains(io.sock.getInetAddress.getHostName) //|| clientlist.contains(io.sock.getInetAddress.getHostAddress)
     io.out.writeBoolean(accepted)
     io.out.flush()
     if (accepted){
       println("Accepted connect from " + io.sock.getInetAddress.getHostAddress + ": " + io.sock.getPort)
+      appendToLog("Accepted connect from " + io.sock.getInetAddress.getHostAddress + ": " + io.sock.getPort)
       serve(io)
     }else{
       println("Rejected connect from " + io.sock.getInetAddress.getHostAddress + ": " + io.sock.getPort)
+      appendToLog("Rejected connect from " + io.sock.getInetAddress.getHostAddress + ": " + io.sock.getPort)
     }
     io.sock.close()
   }
@@ -256,6 +268,19 @@ final class Server(args: Seq[String]) {
         io.out.flush()
         dirRequests(io)
     }
+
+  def appendToLog(message: String): Unit ={
+    val timeZone = TimeZone.getTimeZone("UTC")
+    val dateFormat: SimpleDateFormat = new SimpleDateFormat("EE MMM dd HH:mm:ss zzz yyyy", Locale.US)
+    val dateTime = Calendar.getInstance(timeZone)
+    dateFormat.setTimeZone(timeZone)
+    val currentHour = dateFormat.format(dateTime.getTime)
+    val fileWriter = new FileWriter(logfile,true)
+    val printWriter = new PrintWriter(fileWriter)
+    printWriter.println(s"$currentHour $message")
+    printWriter.close()
+  }
+
 }
 object Server {
   val validKeys = Set("clientlist", "interval", "logfile", "timeout")
