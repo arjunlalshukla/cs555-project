@@ -2,6 +2,8 @@ import java.io.{File, ObjectInputStream, ObjectOutputStream}
 import java.net.{ServerSocket, Socket}
 import java.nio.file.{Files, Paths}
 
+import akka.actor.{ActorSystem, Props}
+
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.jdk.StreamConverters._
@@ -44,7 +46,6 @@ final class Client(args: Seq[String]) {
 
   val io: IOStream = IOStream(new Socket(syncServer, port))
 
-  println("connected and built IO")
   val accepted: Boolean = io.in.readBoolean
   private[this] val get_path = (s: String) => Paths.get(syncFolder.getAbsolutePath, s)
   if (accepted){
@@ -188,11 +189,23 @@ final class Server(args: Seq[String]) {
     throw new FileSyncException(errors.toSeq)
   }
 
-  println("Server configuration parameters:")
-  println(s"clientlist: ${clientlist.mkString(", ")}")
-  println(s"timeout: $timeout")
-  println(s"logfile: $logfile")
-  println(s"interval: $interval")
+  if (logfile.exists) {
+    logfile.delete
+  }
+
+  //collect information that can be used for logfile
+  private[this] val system = ActorSystem("LogFileSystem")
+  private[this] val log = system.actorOf(Props(new IOActor(logfile.toPath)), name="serverLog")
+
+  private[this] val logMessages = new ListBuffer[String]
+  logMessages.append("Server configuration parameters:")
+  logMessages.append(s"clientlist: ${clientlist.mkString(", ")}")
+  logMessages.append(s"timeout: $timeout")
+  logMessages.append(s"logfile: $logfile")
+  logMessages.append(s"interval: $interval")
+  println(logMessages.toSeq.mkString("\n"))
+  log ! Write(logMessages.toSeq.mkString("\n"))
+
 
   private[this] val s = new ServerSocket(port)
   while (true){
@@ -201,14 +214,16 @@ final class Server(args: Seq[String]) {
 
   //serveClients
   def processClient(io: IOStream): Unit = {
-    val accepted = clientlist.contains(io.sock.getInetAddress.getHostName)
+    val accepted = clientlist.contains(io.sock.getInetAddress.getHostName) || clientlist.contains(io.sock.getInetAddress.getHostAddress)
     io.out.writeBoolean(accepted)
     io.out.flush()
     if (accepted){
       println("Accepted connect from " + io.sock.getInetAddress.getHostAddress + ": " + io.sock.getPort)
+      log ! Write("Accepted connect from " + io.sock.getInetAddress.getHostAddress + ": " + io.sock.getPort)
       serve(io)
     }else{
       println("Rejected connect from " + io.sock.getInetAddress.getHostAddress + ": " + io.sock.getPort)
+      log ! Write("Rejected connect from " + io.sock.getInetAddress.getHostAddress + ": " + io.sock.getPort)
     }
     io.sock.close()
   }
@@ -225,10 +240,10 @@ final class Server(args: Seq[String]) {
     val update: Set[String] = serverFileList.keySet diff clientFileList.keySet union
       (serverFileList.keySet intersect clientFileList.keySet)
         .filter(s => serverFileList(s) != clientFileList(s))
-    println(s"Client list: \n${clientFileList.keys.toSeq.sorted.mkString("\n")}\n")
-    println(s"Server list: \n${serverFileList.keys.toSeq.sorted.mkString("\n")}\n")
-    println(s"To delete: \n${delete.toSeq.sorted.mkString("\n")}\n")
-    println(s"To update: \n${update.toSeq.sorted.mkString("\n")}\n")
+    log ! Write(s"Client list: \n${clientFileList.keys.toSeq.sorted.mkString("\n")}\n")
+    log ! Write(s"Server list: \n${serverFileList.keys.toSeq.sorted.mkString("\n")}\n")
+    log ! Write(s"To delete: \n${delete.toSeq.sorted.mkString("\n")}\n")
+    log ! Write(s"To update: \n${update.toSeq.sorted.mkString("\n")}\n")
     io.write(delete)
     io.write(update.filterNot(syncdir.toPath.resolve(_).toFile.isDirectory))
     io.write(update.filter(syncdir.toPath.resolve(_).toFile.isDirectory))
@@ -241,7 +256,7 @@ final class Server(args: Seq[String]) {
     io.read[Option[String]].map(syncdir.toPath.resolve(_).toFile) match {
       case None =>
       case Some(file) =>
-        println(s"writing file to client: ${file.getAbsolutePath}")
+        log ! Write(s"writing file to client: ${file.getAbsolutePath}")
         io.write(FileContents(file.lastModified, Files.readAllBytes(file.toPath)))
         fileRequests(io)
     }
@@ -251,11 +266,12 @@ final class Server(args: Seq[String]) {
     io.read[Option[String]].map(syncdir.toPath.resolve(_).toFile) match {
       case None =>
       case Some(file) =>
-        println(s"giving dir timestamp to client: ${file.getAbsolutePath}")
+        log ! Write(s"giving dir timestamp to client: ${file.getAbsolutePath}")
         io.out.writeLong(file.lastModified)
         io.out.flush()
         dirRequests(io)
     }
+
 }
 object Server {
   val validKeys = Set("clientlist", "interval", "logfile", "timeout")
