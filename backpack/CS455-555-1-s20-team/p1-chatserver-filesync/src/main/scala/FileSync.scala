@@ -1,8 +1,8 @@
-import java.io.{File, ObjectInputStream, ObjectOutputStream}
+import java.io.{File, IOException, ObjectInputStream, ObjectOutputStream}
 import java.net.{ServerSocket, Socket}
 import java.nio.file.{Files, Paths}
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.{ActorRef, ActorSystem, Props}
 
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
@@ -44,12 +44,25 @@ final class Client(args: Seq[String]) {
     syncFolder.mkdir
   }
 
-  val io: IOStream = IOStream(new Socket(syncServer, port))
-
-  val accepted: Boolean = io.in.readBoolean
-  private[this] val get_path = (s: String) => Paths.get(syncFolder.getAbsolutePath, s)
+  val ios: IOStream = IOStream(new Socket(syncServer, port))
+  val accepted: Boolean = ios.in.readBoolean
+  private[this] val get_path =
+    (s: String) => Paths.get(syncFolder.getAbsolutePath, s)
   if (accepted){
     println(s"connected to server $syncServer")
+    try {
+      while (true) {
+        sync(ios)
+      }
+    } catch {
+      case _: IOException => println("Connection with server lost")
+    }
+  } else{
+    println(s"could not connect to server $syncServer, unauthorized")
+  }
+
+  def sync(io: IOStream): Unit = {
+    io.read[IntervalNotify]
     //generate list of files in syncFolder
     val fileList = Files.walk(syncFolder.toPath).toScala(Set).map { path =>
       syncFolder.toPath.relativize(path).toString ->
@@ -95,9 +108,6 @@ final class Client(args: Seq[String]) {
       println(s"updated ${path.toString}")
     }
     io.write(None)
-
-  } else{
-    println(s"could not connect to server $syncServer, unauthorized")
   }
 }
 
@@ -214,21 +224,43 @@ final class Server(args: Seq[String]) {
 
   //serveClients
   def processClient(io: IOStream): Unit = {
-    val accepted = clientlist.contains(io.sock.getInetAddress.getHostName) || clientlist.contains(io.sock.getInetAddress.getHostAddress)
+    val accepted = clientlist.contains(io.sock.getInetAddress.getHostName) ||
+      clientlist.contains(io.sock.getInetAddress.getHostAddress)
     io.out.writeBoolean(accepted)
     io.out.flush()
     if (accepted){
-      println("Accepted connect from " + io.sock.getInetAddress.getHostAddress + ": " + io.sock.getPort)
       log ! Write("Accepted connect from " + io.sock.getInetAddress.getHostAddress + ": " + io.sock.getPort)
-      serve(io)
+      val thread = new ServiceThread(io, syncdir, log)
+      while(true) {
+        thread.run()
+        Thread.sleep(60000)
+      }
     }else{
       println("Rejected connect from " + io.sock.getInetAddress.getHostAddress + ": " + io.sock.getPort)
       log ! Write("Rejected connect from " + io.sock.getInetAddress.getHostAddress + ": " + io.sock.getPort)
     }
     io.sock.close()
   }
+}
+object Server {
+  val validKeys = Set("clientlist", "interval", "logfile", "timeout")
+  // our group's valid ports
+  val validPorts = Seq(5190, 5191, 5192, 5193, 5194)
+}
 
-  def serve(io: IOStream): Unit = {
+final class ServiceThread(
+  private[this] val io: IOStream,
+  private[this] val syncdir: File,
+  private[this] val log: ActorRef
+) extends Runnable {
+  def run(): Unit = {
+    initial()
+    fileRequests()
+    dirRequests()
+  }
+
+  private[this] def initial(): Unit = {
+    io.write(IntervalNotify())
     val clientFileList = io.read[Map[String, FileProperties]]
     val serverFileList = Files.walk(syncdir.toPath).toScala(Set).map { path =>
       syncdir.toPath.relativize(path).toString ->
@@ -247,36 +279,28 @@ final class Server(args: Seq[String]) {
     io.write(delete)
     io.write(update.filterNot(syncdir.toPath.resolve(_).toFile.isDirectory))
     io.write(update.filter(syncdir.toPath.resolve(_).toFile.isDirectory))
-    fileRequests(io)
-    dirRequests(io)
   }
 
   @scala.annotation.tailrec
-  def fileRequests(io: IOStream): Unit =
+  private[this] def fileRequests(): Unit =
     io.read[Option[String]].map(syncdir.toPath.resolve(_).toFile) match {
       case None =>
       case Some(file) =>
         log ! Write(s"writing file to client: ${file.getAbsolutePath}")
         io.write(FileContents(file.lastModified, Files.readAllBytes(file.toPath)))
-        fileRequests(io)
+        fileRequests()
     }
 
   @scala.annotation.tailrec
-  def dirRequests(io: IOStream): Unit =
+  private[this] def dirRequests(): Unit =
     io.read[Option[String]].map(syncdir.toPath.resolve(_).toFile) match {
       case None =>
       case Some(file) =>
         log ! Write(s"giving dir timestamp to client: ${file.getAbsolutePath}")
         io.out.writeLong(file.lastModified)
         io.out.flush()
-        dirRequests(io)
+        dirRequests()
     }
-
-}
-object Server {
-  val validKeys = Set("clientlist", "interval", "logfile", "timeout")
-  // our group's valid ports
-  val validPorts = Seq(5190, 5191, 5192, 5193, 5194)
 }
 
 final class FileSyncException(val msgs: Seq[String])
@@ -285,6 +309,8 @@ final class FileSyncException(val msgs: Seq[String])
 case class FileToSync(fn: String, ts: Long, size: Long)
 case class FileProperties(ts: Long, size: Long)
 case class FileContents(ts: Long, bytes: Array[Byte])
+
+case class IntervalNotify()
 
 case class IOStream(sock: Socket) {
   val out = new ObjectOutputStream(sock.getOutputStream)
