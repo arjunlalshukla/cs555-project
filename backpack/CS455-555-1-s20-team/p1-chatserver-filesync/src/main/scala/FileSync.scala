@@ -195,14 +195,16 @@ final class Server(args: Seq[String]) {
     logfile.delete
   }
 
-  //Setup Logfile stuff, write initial entry that server is starting up
+  //collect information that can be used for logfile
   private[this] val logMessages = new ListBuffer[String]
   logMessages.append("Server configuration parameters:")
   logMessages.append(s"clientlist: ${clientlist.mkString(", ")}")
   logMessages.append(s"timeout: $timeout")
   logMessages.append(s"logfile: $logfile")
   logMessages.append(s"interval: $interval")
+  println(logMessages.toSeq.mkString("\n"))
   appendToLog(logMessages.toSeq.mkString("\n"))
+
 
   private[this] val s = new ServerSocket(port)
   while (true){
@@ -211,7 +213,7 @@ final class Server(args: Seq[String]) {
 
   //serveClients
   def processClient(io: IOStream): Unit = {
-    val accepted = clientlist.contains(io.sock.getInetAddress.getHostName) //|| clientlist.contains(io.sock.getInetAddress.getHostAddress)
+    val accepted = clientlist.contains(io.sock.getInetAddress.getHostName) || clientlist.contains(io.sock.getInetAddress.getHostAddress)
     io.out.writeBoolean(accepted)
     io.out.flush()
     if (accepted){
@@ -237,10 +239,10 @@ final class Server(args: Seq[String]) {
     val update: Set[String] = serverFileList.keySet diff clientFileList.keySet union
       (serverFileList.keySet intersect clientFileList.keySet)
         .filter(s => serverFileList(s) != clientFileList(s))
-    println(s"Client list: \n${clientFileList.keys.toSeq.sorted.mkString("\n")}\n")
-    println(s"Server list: \n${serverFileList.keys.toSeq.sorted.mkString("\n")}\n")
-    println(s"To delete: \n${delete.toSeq.sorted.mkString("\n")}\n")
-    println(s"To update: \n${update.toSeq.sorted.mkString("\n")}\n")
+    appendToLog(s"Client list: \n${clientFileList.keys.toSeq.sorted.mkString("\n")}\n")
+    appendToLog(s"Server list: \n${serverFileList.keys.toSeq.sorted.mkString("\n")}\n")
+    appendToLog(s"To delete: \n${delete.toSeq.sorted.mkString("\n")}\n")
+    appendToLog(s"To update: \n${update.toSeq.sorted.mkString("\n")}\n")
     io.write(delete)
     io.write(update.filterNot(syncdir.toPath.resolve(_).toFile.isDirectory))
     io.write(update.filter(syncdir.toPath.resolve(_).toFile.isDirectory))
@@ -253,7 +255,7 @@ final class Server(args: Seq[String]) {
     io.read[Option[String]].map(syncdir.toPath.resolve(_).toFile) match {
       case None =>
       case Some(file) =>
-        println(s"writing file to client: ${file.getAbsolutePath}")
+        appendToLog(s"writing file to client: ${file.getAbsolutePath}")
         io.write(FileContents(file.lastModified, Files.readAllBytes(file.toPath)))
         fileRequests(io)
     }
@@ -263,7 +265,7 @@ final class Server(args: Seq[String]) {
     io.read[Option[String]].map(syncdir.toPath.resolve(_).toFile) match {
       case None =>
       case Some(file) =>
-        println(s"giving dir timestamp to client: ${file.getAbsolutePath}")
+        appendToLog(s"giving dir timestamp to client: ${file.getAbsolutePath}")
         io.out.writeLong(file.lastModified)
         io.out.flush()
         dirRequests(io)
