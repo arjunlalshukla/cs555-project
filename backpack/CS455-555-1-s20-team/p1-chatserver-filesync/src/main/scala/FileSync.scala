@@ -1,10 +1,8 @@
-import java.io.{File, FileWriter, ObjectInputStream, ObjectOutputStream, PrintWriter}
+import java.io.{File, ObjectInputStream, ObjectOutputStream}
 import java.net.{ServerSocket, Socket}
 import java.nio.file.{Files, Paths}
-import java.text.SimpleDateFormat
-import java.util.{Calendar, Locale, TimeZone}
 
-import akka.io.SimpleDnsCache
+import akka.actor.{ActorSystem, Props}
 
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
@@ -196,6 +194,9 @@ final class Server(args: Seq[String]) {
   }
 
   //collect information that can be used for logfile
+  private[this] val system = ActorSystem("LogFileSystem")
+  private[this] val log = system.actorOf(Props(new IOActor(logfile.toPath)), name="serverLog")
+
   private[this] val logMessages = new ListBuffer[String]
   logMessages.append("Server configuration parameters:")
   logMessages.append(s"clientlist: ${clientlist.mkString(", ")}")
@@ -203,7 +204,7 @@ final class Server(args: Seq[String]) {
   logMessages.append(s"logfile: $logfile")
   logMessages.append(s"interval: $interval")
   println(logMessages.toSeq.mkString("\n"))
-  appendToLog(logMessages.toSeq.mkString("\n"))
+  log ! Write(logMessages.toSeq.mkString("\n"))
 
 
   private[this] val s = new ServerSocket(port)
@@ -218,11 +219,11 @@ final class Server(args: Seq[String]) {
     io.out.flush()
     if (accepted){
       println("Accepted connect from " + io.sock.getInetAddress.getHostAddress + ": " + io.sock.getPort)
-      appendToLog("Accepted connect from " + io.sock.getInetAddress.getHostAddress + ": " + io.sock.getPort)
+      log ! Write("Accepted connect from " + io.sock.getInetAddress.getHostAddress + ": " + io.sock.getPort)
       serve(io)
     }else{
       println("Rejected connect from " + io.sock.getInetAddress.getHostAddress + ": " + io.sock.getPort)
-      appendToLog("Rejected connect from " + io.sock.getInetAddress.getHostAddress + ": " + io.sock.getPort)
+      log ! Write("Rejected connect from " + io.sock.getInetAddress.getHostAddress + ": " + io.sock.getPort)
     }
     io.sock.close()
   }
@@ -239,10 +240,10 @@ final class Server(args: Seq[String]) {
     val update: Set[String] = serverFileList.keySet diff clientFileList.keySet union
       (serverFileList.keySet intersect clientFileList.keySet)
         .filter(s => serverFileList(s) != clientFileList(s))
-    appendToLog(s"Client list: \n${clientFileList.keys.toSeq.sorted.mkString("\n")}\n")
-    appendToLog(s"Server list: \n${serverFileList.keys.toSeq.sorted.mkString("\n")}\n")
-    appendToLog(s"To delete: \n${delete.toSeq.sorted.mkString("\n")}\n")
-    appendToLog(s"To update: \n${update.toSeq.sorted.mkString("\n")}\n")
+    log ! Write(s"Client list: \n${clientFileList.keys.toSeq.sorted.mkString("\n")}\n")
+    log ! Write(s"Server list: \n${serverFileList.keys.toSeq.sorted.mkString("\n")}\n")
+    log ! Write(s"To delete: \n${delete.toSeq.sorted.mkString("\n")}\n")
+    log ! Write(s"To update: \n${update.toSeq.sorted.mkString("\n")}\n")
     io.write(delete)
     io.write(update.filterNot(syncdir.toPath.resolve(_).toFile.isDirectory))
     io.write(update.filter(syncdir.toPath.resolve(_).toFile.isDirectory))
@@ -255,7 +256,7 @@ final class Server(args: Seq[String]) {
     io.read[Option[String]].map(syncdir.toPath.resolve(_).toFile) match {
       case None =>
       case Some(file) =>
-        appendToLog(s"writing file to client: ${file.getAbsolutePath}")
+        log ! Write(s"writing file to client: ${file.getAbsolutePath}")
         io.write(FileContents(file.lastModified, Files.readAllBytes(file.toPath)))
         fileRequests(io)
     }
@@ -265,23 +266,11 @@ final class Server(args: Seq[String]) {
     io.read[Option[String]].map(syncdir.toPath.resolve(_).toFile) match {
       case None =>
       case Some(file) =>
-        appendToLog(s"giving dir timestamp to client: ${file.getAbsolutePath}")
+        log ! Write(s"giving dir timestamp to client: ${file.getAbsolutePath}")
         io.out.writeLong(file.lastModified)
         io.out.flush()
         dirRequests(io)
     }
-
-  def appendToLog(message: String): Unit ={
-    val timeZone = TimeZone.getTimeZone("UTC")
-    val dateFormat: SimpleDateFormat = new SimpleDateFormat("EE MMM dd HH:mm:ss zzz yyyy", Locale.US)
-    val dateTime = Calendar.getInstance(timeZone)
-    dateFormat.setTimeZone(timeZone)
-    val currentHour = dateFormat.format(dateTime.getTime)
-    val fileWriter = new FileWriter(logfile,true)
-    val printWriter = new PrintWriter(fileWriter)
-    printWriter.println(s"$currentHour $message")
-    printWriter.close()
-  }
 
 }
 object Server {
