@@ -115,12 +115,10 @@ final class Server(args: Seq[String]) {
 
   private[this] val threadList = new mutable.HashSet[ServiceThread]
 
-  Runtime.getRuntime.addShutdownHook(new Thread {
-    override def run(): Unit = {
-      threadList.foreach(_.close())
-      log ! Write("Received kill signal from console, shutting down")
-    }
-  })
+  sys.addShutdownHook {
+    threadList.foreach(_.close())
+    println("Shutting down the server")
+  }
 
   TimeoutHandler.restart()
 
