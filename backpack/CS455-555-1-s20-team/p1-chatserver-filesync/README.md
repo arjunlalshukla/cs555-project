@@ -10,11 +10,25 @@ Folder synchronization server and client which will keep clients up to date with
 
 ## Building the code
 
-The project is an sbt project, so... 
+The project is an sbt project, with a provide Makefile. 
+
+To first install sbt, run the provided script get_sbt.sh:
+```
+./get_sbt.sh
+```
 
 to build the project:
 ```
 make
+```
+
+to run the code:
+```
+make server SERVER_DIR=<path for server dir>
+```
+
+```
+make client SERVER_HOST=<serverhost> CLIENT_DIR=<path for client directory>
 ```
 
 clean up:
@@ -54,6 +68,9 @@ To test the server, we performed several different test scenarios:
 
 ## Reflection
 
+In this project, we did pair programming almost exclusively. For the majority of the project, Arjun drove and Ahmad navigated.
+
+
 Things that were challenging: 
 * Trying to use a new programming language.
 * Wanting TCP to have a notification when a socket closed from the remote side.
@@ -64,9 +81,12 @@ Things that were challenging:
 * Testing a distributed app is hard, and there are very many edge and corner cases to consider.
 
 Things that were rewarding: 
-* Working with a knowledgeable and dedicated partner.
+* Working with a knowledgeable, reliable, and dedicated partner.
 * Learning new things about the Scala language and the Akka framework.
 * Realizing that we must open the outputstream *before* the inputstream or else weird things happen.
 * Monitors aren't so bad and can still lead to a pretty clean solution.
 * The Scala language has some nice syntactic sugar that remove some of the verbosity found in Java.
-* Realizing that four is less than five, and that's important!
+* Realizing that four is less than five, and that's important when you're coding!
+
+## Video 
+[Youtube Link](https://youtu.be/SUz2vYLD2mQ)
