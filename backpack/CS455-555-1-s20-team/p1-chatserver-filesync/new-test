@@ -1,5 +1,5 @@
 #!/bin/sh
-rm -rf curr-test
-cp -R test-dir curr-test
+rm -rf $1
+cp -R clientTestSync $1
 sleep 1
-touch curr-test/clientTestSync/textdoc.txt
+touch $1/textdoc.txt
