@@ -10,4 +10,4 @@ libraryDependencies ++= Seq(
   "org.scalatest" % "scalatest_2.13" % "3.1.1" % "test",
   "ch.qos.logback" % "logback-classic" % "1.1.3" % Runtime
 )
-
+assemblyJarName in assembly := "p1-chatserver-filesync.jar"
