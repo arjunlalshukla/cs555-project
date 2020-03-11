@@ -6,6 +6,13 @@ import akka.actor.ActorRef
 
 import scala.jdk.StreamConverters._
 
+/**
+ * Threads that handle each client
+ * @param io socket and input/output streams for communication with client
+ * @param syncdir directory to keep up to date with the clients
+ * @param log logfile path
+ */
+
 final class ServiceThread(
   private[this] val io: IOStream,
   private[this] val syncdir: File,
@@ -57,6 +64,9 @@ final class ServiceThread(
     io.write(update.filter(syncdir.toPath.resolve(_).toFile.isDirectory))
   }
 
+  /**
+   * Handle file requests from the client
+   */
   @scala.annotation.tailrec
   private[this] def fileRequests(): Unit =
     io.read[Option[String]].map(syncdir.toPath.resolve(_).toFile) match {
@@ -75,6 +85,9 @@ final class ServiceThread(
         fileRequests()
     }
 
+  /**
+   * Handle subdirectory requests from the client
+   */
   @scala.annotation.tailrec
   private[this] def dirRequests(): Unit =
     io.read[Option[String]].map(syncdir.toPath.resolve(_).toFile) match {

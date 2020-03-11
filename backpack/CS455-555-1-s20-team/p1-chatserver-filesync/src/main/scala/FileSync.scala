@@ -1,6 +1,9 @@
 import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.net.Socket
 
+/**
+ *  Driver class for starting the server or client
+ */
 object FileSync {
   val usage: String = """
     |usage:
