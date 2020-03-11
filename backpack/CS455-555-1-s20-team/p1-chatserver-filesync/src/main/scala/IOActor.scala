@@ -9,12 +9,21 @@ abstract sealed class IOCmd
 case class Write(s: String)
 case class WriteSeq(s: Seq[String])
 
+/**
+ * Actor which performs logging functionality
+ * @param outfile the logfile path
+ * @param toConsole also output to console
+ */
 final class IOActor(outfile: Path, toConsole: Boolean) extends Actor {
   def receive: Receive = {
     case Write(s) => write(Seq(s))
     case WriteSeq(s) => write(s)
   }
 
+  /**
+   * write a message to the logfile
+   * @param s the message to write
+   */
   private[this] def write(s: Seq[String]): Unit = {
     val timeZone = TimeZone.getTimeZone("UTC")
     val dateFormat: SimpleDateFormat =

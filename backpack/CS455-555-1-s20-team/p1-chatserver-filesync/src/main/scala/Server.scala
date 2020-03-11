@@ -9,6 +9,10 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
 
+/**
+ * start a server
+ * @param args the local folder to synchronize
+ */
 //noinspection SpellCheckingInspection
 final class Server(args: Seq[String]) {
   if (args.length != 1) {
@@ -127,7 +131,11 @@ final class Server(args: Seq[String]) {
     processClient(IOStream(s.accept))
   }
 
-  //serveClients
+
+  /**
+   * listen for new client connections and hand them to the threadpool
+   * @param io server socket and outputstream and inputstream to use for communication
+   */
   def processClient(io: IOStream): Unit = threadList.synchronized {
     val accepted = threadList.size < 4 && (
       clientlist.contains(io.sock.getInetAddress.getHostName) ||
@@ -148,6 +156,9 @@ final class Server(args: Seq[String]) {
     }
   }
 
+  /**
+   * Handler for the interval period
+   */
   private[this] object IntervalHandler {
 
     private[this] var timer = new Timer()
@@ -175,6 +186,9 @@ final class Server(args: Seq[String]) {
     }
   }
 
+  /**
+   * Handler for the Timeout period
+   */
   private[this] object TimeoutHandler {
 
     private[this] var timer = new Timer()
@@ -194,6 +208,10 @@ final class Server(args: Seq[String]) {
     def cancel(): Unit = timer.cancel()
   }
 }
+
+/**
+ * server configuration stuff
+ */
 object Server {
   val validKeys = Set("clientlist", "interval", "logfile", "timeout")
   // our group's valid ports
