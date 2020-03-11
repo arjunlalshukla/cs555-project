@@ -11,7 +11,7 @@ abstract sealed class IOCmd
 case class Write(s: String)
 case class WriteSeq(s: Seq[String])
 
-final class IOActor(outfile: Path) extends Actor {
+final class IOActor(outfile: Path, toConsole: Boolean) extends Actor {
   def receive: Receive = {
     case Write(s) => write(Seq(s))
     case WriteSeq(s) => write(s)
@@ -25,6 +25,9 @@ final class IOActor(outfile: Path) extends Actor {
     val currentHour = dateFormat.format(dateTime.getTime)
     val fileWriter = new FileWriter(outfile.toFile,true)
     val printWriter = new PrintWriter(fileWriter)
+    if (toConsole) {
+      println(s"$currentHour ${s.mkString("\n")}")
+    }
     printWriter.println(s"$currentHour ${s.mkString("\n")}")
     printWriter.close()
   }

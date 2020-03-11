@@ -1,9 +1,12 @@
 import java.io.{File, IOException, ObjectInputStream, ObjectOutputStream}
-import java.net.{ServerSocket, Socket}
+import java.net.{ServerSocket, Socket, SocketException}
 import java.nio.file.{Files, Paths}
+import java.util.{Timer, TimerTask}
+import java.util.concurrent.{Executors, TimeUnit}
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.jdk.StreamConverters._
@@ -55,7 +58,9 @@ final class Client(args: Seq[String]) {
         sync(ios)
       }
     } catch {
-      case _: IOException => println("Connection with server lost")
+      case e: IOException =>
+        e.printStackTrace()
+        println("Connection with server lost")
     }
   } else{
     println(s"could not connect to server $syncServer, unauthorized")
@@ -110,7 +115,6 @@ final class Client(args: Seq[String]) {
     io.write(None)
   }
 }
-
 
 //noinspection SpellCheckingInspection
 final class Server(args: Seq[String]) {
@@ -205,7 +209,8 @@ final class Server(args: Seq[String]) {
 
   //collect information that can be used for logfile
   private[this] val system = ActorSystem("LogFileSystem")
-  private[this] val log = system.actorOf(Props(new IOActor(logfile.toPath)), name="serverLog")
+  private[this] val log =
+    system.actorOf(Props(new IOActor(logfile.toPath, true)), name="serverLog")
 
   private[this] val logMessages = new ListBuffer[String]
   logMessages.append("Server configuration parameters:")
@@ -213,9 +218,10 @@ final class Server(args: Seq[String]) {
   logMessages.append(s"timeout: $timeout")
   logMessages.append(s"logfile: $logfile")
   logMessages.append(s"interval: $interval")
-  println(logMessages.toSeq.mkString("\n"))
   log ! Write(logMessages.toSeq.mkString("\n"))
 
+  private[this] val threadList = new mutable.HashSet[ServiceThread]
+  //TimeoutThread.restart()
 
   private[this] val s = new ServerSocket(port)
   while (true){
@@ -223,23 +229,66 @@ final class Server(args: Seq[String]) {
   }
 
   //serveClients
-  def processClient(io: IOStream): Unit = {
-    val accepted = clientlist.contains(io.sock.getInetAddress.getHostName) ||
-      clientlist.contains(io.sock.getInetAddress.getHostAddress)
+  def processClient(io: IOStream): Unit = threadList.synchronized {
+    val accepted = threadList.size < 5 && (
+      clientlist.contains(io.sock.getInetAddress.getHostName) ||
+        clientlist.contains(io.sock.getInetAddress.getHostAddress)
+      )
     io.out.writeBoolean(accepted)
     io.out.flush()
-    if (accepted){
+    if (accepted) {
       log ! Write("Accepted connect from " + io.sock.getInetAddress.getHostAddress + ": " + io.sock.getPort)
-      val thread = new ServiceThread(io, syncdir, log)
-      while(true) {
-        thread.run()
-        Thread.sleep(60000)
+      threadList add new ServiceThread(io, syncdir, log)
+      //TimeoutThread.cancel()
+      if (threadList.size == 1) {
+        IntervalHandler.restart()
       }
-    }else{
-      println("Rejected connect from " + io.sock.getInetAddress.getHostAddress + ": " + io.sock.getPort)
+    } else {
       log ! Write("Rejected connect from " + io.sock.getInetAddress.getHostAddress + ": " + io.sock.getPort)
+      io.sock.close()
     }
-    io.sock.close()
+  }
+
+  private[this] object IntervalHandler {
+
+    private[this] var timer = new Timer()
+
+    private[this] class IntervalTimer extends TimerTask {
+      def run(): Unit = threadList.synchronized {
+        threadList.filterInPlace(_.active)
+        threadList.foreach(_.notification())
+        threadList.filterInPlace(_.active)
+        val pool = Executors.newFixedThreadPool(4)
+        threadList.foreach(pool.execute)
+        pool.shutdown()
+        pool.awaitTermination(10, TimeUnit.MINUTES)
+        threadList.filterInPlace(_.active)
+        if (threadList.isEmpty) {
+          this.cancel()
+          //TimeoutThread.restart()
+        }
+      }
+    }
+
+    def restart(): Unit = {
+      timer = new Timer()
+      timer.schedule(new IntervalTimer, 0, interval)
+    }
+  }
+
+  private[this] object TimeoutThread extends TimerTask {
+
+    private[this] var timer = new Timer()
+
+    def run(): Unit = {
+      log ! Write("Server timed out")
+      System.exit(0)
+    }
+
+    def restart(): Unit = {
+      timer = new Timer()
+      timer.schedule(this, timeout)
+    }
   }
 }
 object Server {
@@ -253,14 +302,28 @@ final class ServiceThread(
   private[this] val syncdir: File,
   private[this] val log: ActorRef
 ) extends Runnable {
-  def run(): Unit = {
-    initial()
-    fileRequests()
-    dirRequests()
-  }
+
+  private[this] var _active = true
+
+  def run(): Unit =
+    try {
+      initial()
+      fileRequests()
+      dirRequests()
+    } catch {
+      case _: IOException | _: SocketException => _active = false
+    }
+
+  def active: Boolean = _active
+
+  def notification(): Unit =
+    try {
+      io.write(IntervalNotify())
+    } catch {
+      case _: IOException | _: SocketException => _active = false
+    }
 
   private[this] def initial(): Unit = {
-    io.write(IntervalNotify())
     val clientFileList = io.read[Map[String, FileProperties]]
     val serverFileList = Files.walk(syncdir.toPath).toScala(Set).map { path =>
       syncdir.toPath.relativize(path).toString ->
@@ -321,3 +384,4 @@ case class IOStream(sock: Socket) {
     out.flush()
   }
 }
+
