@@ -4,6 +4,11 @@ import java.nio.file.{Files, Paths}
 
 import scala.jdk.StreamConverters._
 
+
+/**
+ * Start a client
+ * @param args a server host address and a local folder to synchronize
+ */
 final class Client(args: Seq[String]) {
   if (args.length != 2) {
     throw new FileSyncException(Seq(FileSync.usage))
@@ -37,6 +42,10 @@ final class Client(args: Seq[String]) {
     println(s"could not connect to server $syncServer, unauthorized")
   }
 
+  /**
+   * do the synchronization with the server
+   * @param io the socket, input and output streams to communicate with
+   */
   def sync(io: IOStream): Unit = {
     io.read[IntervalNotify]
     //generate list of files in syncFolder
