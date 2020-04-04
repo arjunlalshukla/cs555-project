@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ScalaCompilerConfiguration">
-    <profile name="sbt 1" modules="p2-identityserver" />
+    <profile name="sbt 1" modules="p2-identityserver,p2-identityserver_3309" />
   </component>
 </project>
