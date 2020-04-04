@@ -1,10 +1,7 @@
-import little.cli.Cli.{application, option}
+import little.cli.Cli.application
 import little.cli.Implicits._
-import org.apache.commons.cli.{MissingOptionException, Option, UnrecognizedOptionException}
+import org.apache.commons.cli.Option
 
-class IdentityClient {
-
-}
 object IdentityClient {
 
   val defaultPort = 5190
@@ -43,7 +40,8 @@ object IdentityClient {
       throw new IllegalArgumentException("must give exactly 1 query option")
     }
     val server = cmd.getOptionValue('s')
-    val port = scala.Option(cmd.getOptionValue('n')).map(_.toInt).getOrElse(defaultPort)
+    val port = scala.Option(cmd.getOptionValue('n'))
+      .map(_.toInt).getOrElse(defaultPort)
     scala.Option(cmd.getOptionValue('p')) match {
       case Some(password) =>
         if (cmd.hasOption('c')) {
