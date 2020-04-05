@@ -66,11 +66,12 @@ public class UserTest {
         User user = dao.getUser(testUser.getUserName());
         Assert.assertEquals(testUser.getUserName(), user.getUserName());
         Assert.assertEquals(testUser.getRealName(), user.getRealName());
-        Assert.assertEquals(testUser.getHashwd(), user.getHashwd());
+        Assert.assertNull("You should not retrieve the user's password", user.getHashwd());
     }
 
     @Test
     public void testDeleteUser(){
+        //Deleting a user with a password set
         dao.addUser(testUser);
         assertFalse("You should not be able to delete a user with a password with a wrong password",
                 dao.deleteUser(testUser.getUserName(),"somewrongpassword"));
@@ -83,6 +84,7 @@ public class UserTest {
                 "User data should not be found after user been deleted.",
                 dao.getUser(testUser.getUserName()));
 
+        //Deleting user with no password set
         dao.addUser(testUser);
         dao.updateUserProperty(testUser.getUserName(), testUser.getHashwd(),"hashwd",null);
         assertFalse("You should not be able to delete a user with a null password with a wrong password",
@@ -96,20 +98,20 @@ public class UserTest {
     }
 
 
-
     @Test
     public void testModifyUser(){
         dao.addUser(testUser);
-
         assertTrue("You should be able to update the testDb user realname.",
-                dao.updateUserProperty(userName, testUser.getHashwd(),"realName","She who shall not be named")
+                dao.updateUserProperty(userName, testUser.getHashwd(),
+                        "realName","She who shall not be named")
                 );
         assertTrue("You should be able update the testDb user hashwd.",
                 dao.updateUserProperty(userName, testUser.getHashwd(),"hashwd","newhashedpwd"));
         User user = dao.getUser(testUser.getUserName());
         Assert.assertEquals(testUser.getUserName(), user.getUserName());
         Assert.assertEquals("She who shall not be named", user.getRealName());
-        Assert.assertEquals("newhashedpwd", user.getHashwd());
+        Assert.assertNull("You should not see a user's password", user.getHashwd());
+
         assertFalse("You should not be able to use your old password, once changed.",
                 dao.updateUserProperty(userName,testUser.getHashwd(),"realName","cant update"));
         assertFalse("You should not be able to modify a user with a set password without any password.",
@@ -122,6 +124,27 @@ public class UserTest {
         dao.addUser(testUser);
         List<User> users = dao.getAllUsers();
         assertEquals(1, users.size());
+        assertNull("You should not retrieve the passwords of users", users.get(0).getHashwd());
 
+    }
+
+    @Test
+    public void testGetUserByUserName(){
+        dao.addUser(testUser);
+        User user = dao.getUser(userName);
+        assertEquals("You should be able to lookup a user by username",testUser.getId(), user.getId());
+        assertNull("Looking for a username which doesn't exist should return null",
+                dao.getUser("somenoneexistingusername"));
+    }
+
+    @Test
+    public void testGetUserByUUID(){
+        String uid = dao.addUser(testUser);
+        User user = dao.getUserByUUID(uid);
+        assertEquals("You should be able to lookup a user by UUID", testUser.getId(), user.getId());
+        assertNull("Looking for a userId which doesn't exist should return null",
+                dao.getUserByUUID(dao.generateObjectID().toString()));
+        assertNull("Looking for a bad UUID should return null, not throw an exception.",
+                dao.getUserByUUID("somebiglongandalsoinvalidUID"));
     }
 }

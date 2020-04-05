@@ -3,12 +3,14 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
 import org.bson.conversions.Bson;
+import org.bson.types.ObjectId;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +42,9 @@ public class UserDao extends AbstractIdentityDao {
     public User getUser(String userName) {
         List<Bson> pipeline = new ArrayList<>();
         Bson match = Aggregates.match(Filters.eq("userName", userName));
+        Bson project = Aggregates.project(Projections.exclude("hashwd"));
         pipeline.add(match);
+        pipeline.add(project);
         return this.usersCollection.aggregate(pipeline).first();
     }
 
@@ -59,9 +63,12 @@ public class UserDao extends AbstractIdentityDao {
     }
 
     public User getUserByUUID(String uuid) {
+        if (! ObjectId.isValid(uuid)){return null;}
         List<Bson> pipeline = new ArrayList<>();
-        Bson match = Aggregates.match(Filters.eq("uuid", uuid));
+        Bson match = Aggregates.match(Filters.eq("_id", new ObjectId(uuid)));
+        Bson project = Aggregates.project(Projections.exclude("hashwd"));
         pipeline.add(match);
+        pipeline.add(project);
         return this.usersCollection.aggregate(pipeline).first();
     }
 
@@ -69,7 +76,9 @@ public class UserDao extends AbstractIdentityDao {
         List<User> users = new ArrayList<>();
         List<Bson> pipeline = new ArrayList<>();
         Bson match = Aggregates.match(Filters.exists("userName"));
+        Bson project = Aggregates.project(Projections.exclude("hashwd"));
         pipeline.add(match);
+        pipeline.add(project);
         this.usersCollection.aggregate(pipeline).into(users);
         return users;
     }

@@ -25,7 +25,10 @@ object IdentityServer {
   }
 
 
-  def create(login: String, real: String, pw: String): Unit = {
+  //creates a new user and returns their UUID
+  //throws exception on duplicate username
+  //null otherwise
+  def create(login: String, real: String, pw: String): String = {
     val user = new User()
     user.setUserName(login)
     user.setRealName(real)
@@ -34,12 +37,21 @@ object IdentityServer {
     if (uid == null){
       //error, user not created successfully
     }
-    //need to handle exception in case user already exists
+    //need to handle exception on client side in case user already exists
+    uid
   }
 
-  def delete(login: String, pw: String): Unit = {}
+  //returns true if successful, false otherwise
+  def delete(login: String, pw: String): Boolean = {
+    dao.deleteUser(login, pw)
+  }
 
-  def modify(oldlogin: String, pw: String, newlogin: String): Unit = {}
+  //returns true if successful, false if username not found or bad password
+  //throws exception if attempt to modify username to existing username
+  def modify(oldlogin: String, pw: String, newlogin: String): Boolean = {
+    dao.updateUserProperty(oldlogin,pw,"userName",newlogin)
+  }
+
 
   def all: Seq[User] = Seq()
 
@@ -49,6 +61,6 @@ object IdentityServer {
 
   def lookup(login: String): User = null
 
-  def reverse_lookup(uuid: String): User = null
+  def reverse_lookup(uuid: String): User = this.dao.getUserByUUID(uuid)
 
 }
