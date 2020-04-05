@@ -5,7 +5,6 @@ import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
-import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
@@ -33,44 +32,41 @@ public class UserDao extends AbstractIdentityDao {
         return this.usersCollection.countDocuments();
     }
 
-    public boolean addUser(User user){
+    public String addUser(User user){
         usersCollection.insertOne(user);
-        return true;
+        return user.getId().toString();
     }
 
     public User getUser(String userName) {
-        User user = null;
         List<Bson> pipeline = new ArrayList<>();
         Bson match = Aggregates.match(Filters.eq("userName", userName));
         pipeline.add(match);
-        user = this.usersCollection.aggregate(pipeline).first();
-        return user;
+        return this.usersCollection.aggregate(pipeline).first();
     }
 
-    public boolean deleteUser(String userName) {
-        Bson query = Filters.eq("userName", userName);
-        DeleteResult dResult = this.usersCollection.deleteOne(query);
+    public boolean deleteUser(String userName, String hashwd) {
+        Bson match = Filters.and(Filters.eq("userName", userName), Filters.eq("hashwd",hashwd));
+        DeleteResult dResult = this.usersCollection.deleteOne(match);
         return dResult.getDeletedCount() == 1;
     }
 
-    public boolean updateUserProperty(String userName, String field, String value){
-        Bson query = new Document("userName", userName);
+    public boolean updateUserProperty(String userName, String hashwd, String field, String value){
+        if (field.equals("_id")) {return false;}
+        Bson query = Filters.and(Filters.eq("userName", userName), Filters.eq("hashwd", hashwd));
         Bson update = new Document(field, value);
         UpdateResult updateResult = usersCollection.updateOne(query, new Document("$set", update));
-        return updateResult.getMatchedCount()==1;
+        return updateResult.getMatchedCount() == 1;
     }
 
     public User getUserByUUID(String uuid) {
-        User user = null;
         List<Bson> pipeline = new ArrayList<>();
         Bson match = Aggregates.match(Filters.eq("uuid", uuid));
         pipeline.add(match);
-        user = this.usersCollection.aggregate(pipeline).first();
-        return user;
+        return this.usersCollection.aggregate(pipeline).first();
     }
 
     public List<User> getAllUsers(){
-        List<User> users = new ArrayList<User>();
+        List<User> users = new ArrayList<>();
         List<Bson> pipeline = new ArrayList<>();
         Bson match = Aggregates.match(Filters.exists("userName"));
         pipeline.add(match);

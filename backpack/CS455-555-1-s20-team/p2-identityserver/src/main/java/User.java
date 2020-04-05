@@ -1,9 +1,13 @@
+import org.bson.codecs.pojo.annotations.BsonId;
+import org.bson.types.ObjectId;
+
 public class User {
 
     private String userName;
     private String realName;
     private String hashwd;
-    private String uuid;
+    @BsonId
+    private ObjectId id;
 
     public User() {
         super();
@@ -43,8 +47,8 @@ public class User {
         return this.userName;
     }
 
-    public String getUUID() { return this.uuid; }
+    public ObjectId getId() { return this.id; }
 
-    public void setUUID(String uuid) { this.uuid = uuid; }
+    public void setId(ObjectId uuid) { this.id = uuid; }
 
 }

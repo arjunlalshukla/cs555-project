@@ -16,7 +16,6 @@ import static org.junit.Assert.*;
 
 public class UserTest {
     private static Properties properties;
-    private String mongoUri;
     private UserDao dao;
     private MongoClient mongoClient;
     private String databaseName;
@@ -37,17 +36,14 @@ public class UserTest {
 
     public MongoClient mongoClient(String connectionString){
         ConnectionString connString = new ConnectionString(connectionString);
-
-        MongoClient mongoClient = MongoClients.create(connString);
-        return mongoClient;
+        return MongoClients.create(connString);
     }
 
     @Before
     public void setup() throws IOException {
-        mongoUri = getProperty("mongodb.uri");
+        String mongoUri = getProperty("mongodb.uri");
         databaseName = getProperty("mongodb.database");
         this.mongoClient=mongoClient(mongoUri);
-        this.dao = new UserDao(mongoClient, databaseName);
         this.dao = new UserDao(mongoClient, databaseName);
         this.testUser = new User(userName);
         this.testUser.setRealName("Hermione Granger");
@@ -63,7 +59,7 @@ public class UserTest {
     @Test
     public void testRegisterUser() {
 
-        assertTrue(
+        assertNotNull(
                 "Should have correctly created the user - check add user method",
                 dao.addUser(testUser)); // add string explanation
 
@@ -76,27 +72,49 @@ public class UserTest {
     @Test
     public void testDeleteUser(){
         dao.addUser(testUser);
+        assertFalse("You should not be able to delete a user with a password with a wrong password",
+                dao.deleteUser(testUser.getUserName(),"somewrongpassword"));
+        assertFalse( "You should not be able to delete a user with a password without a null password",
+                dao.deleteUser(testUser.getUserName(), null));
         assertTrue(
                 "You should be able to delete correctly the testDb user.",
-                dao.deleteUser(testUser.getUserName()));
+                dao.deleteUser(testUser.getUserName(),testUser.getHashwd()));
+        assertNull(
+                "User data should not be found after user been deleted.",
+                dao.getUser(testUser.getUserName()));
+
+        dao.addUser(testUser);
+        dao.updateUserProperty(testUser.getUserName(), testUser.getHashwd(),"hashwd",null);
+        assertFalse("You should not be able to delete a user with a null password with a wrong password",
+                dao.deleteUser(testUser.getUserName(),"somewrongpassword"));
+        assertTrue(
+                "You should be able to delete correctly the testDb user.",
+                dao.deleteUser(testUser.getUserName(),null));
         assertNull(
                 "User data should not be found after user been deleted.",
                 dao.getUser(testUser.getUserName()));
     }
 
 
+
     @Test
     public void testModifyUser(){
         dao.addUser(testUser);
+
         assertTrue("You should be able to update the testDb user realname.",
-                dao.updateUserProperty(userName,"realName","She who shall not be named")
+                dao.updateUserProperty(userName, testUser.getHashwd(),"realName","She who shall not be named")
                 );
         assertTrue("You should be able update the testDb user hashwd.",
-                dao.updateUserProperty(userName,"hashwd","newhashedpwd"));
+                dao.updateUserProperty(userName, testUser.getHashwd(),"hashwd","newhashedpwd"));
         User user = dao.getUser(testUser.getUserName());
         Assert.assertEquals(testUser.getUserName(), user.getUserName());
         Assert.assertEquals("She who shall not be named", user.getRealName());
         Assert.assertEquals("newhashedpwd", user.getHashwd());
+        assertFalse("You should not be able to use your old password, once changed.",
+                dao.updateUserProperty(userName,testUser.getHashwd(),"realName","cant update"));
+        assertFalse("You should not be able to modify a user with a set password without any password.",
+                dao.updateUserProperty(userName,null,"realName","cannot update"));
+
     }
 
     @Test
