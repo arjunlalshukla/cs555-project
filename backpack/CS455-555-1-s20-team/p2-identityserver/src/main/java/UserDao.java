@@ -59,5 +59,24 @@ public class UserDao extends AbstractIdentityDao {
         UpdateResult updateResult = usersCollection.updateOne(query, new Document("$set", update));
         return updateResult.getMatchedCount()==1;
     }
+
+    public User getUserByUUID(String uuid) {
+        User user = null;
+        List<Bson> pipeline = new ArrayList<>();
+        Bson match = Aggregates.match(Filters.eq("uuid", uuid));
+        pipeline.add(match);
+        user = this.usersCollection.aggregate(pipeline).first();
+        return user;
+    }
+
+    public List<User> getAllUsers(){
+        List<User> users = new ArrayList<User>();
+        List<Bson> pipeline = new ArrayList<>();
+        Bson match = Aggregates.match(Filters.exists("userName"));
+        pipeline.add(match);
+        this.usersCollection.aggregate(pipeline).into(users);
+        return users;
+    }
+
 }
 

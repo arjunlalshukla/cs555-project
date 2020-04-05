@@ -3,6 +3,7 @@ public class User {
     private String userName;
     private String realName;
     private String hashwd;
+    private String uuid;
 
     public User() {
         super();
@@ -41,5 +42,9 @@ public class User {
     public String getUserName(){
         return this.userName;
     }
+
+    public String getUUID() { return this.uuid; }
+
+    public void setUUID(String uuid) { this.uuid = uuid; }
 
 }

@@ -9,10 +9,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Properties;
 
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class UserTest {
     private static Properties properties;
@@ -64,7 +64,7 @@ public class UserTest {
     public void testRegisterUser() {
 
         assertTrue(
-                "Should have correctly created the user - check your write user method",
+                "Should have correctly created the user - check add user method",
                 dao.addUser(testUser)); // add string explanation
 
         User user = dao.getUser(testUser.getUserName());
@@ -77,10 +77,10 @@ public class UserTest {
     public void testDeleteUser(){
         dao.addUser(testUser);
         assertTrue(
-                "You should be able to delete correctly the testDb user. Check your delete filter",
+                "You should be able to delete correctly the testDb user.",
                 dao.deleteUser(testUser.getUserName()));
         assertNull(
-                "User data should not be found after user been deleted. Make sure you delete data from users collection",
+                "User data should not be found after user been deleted.",
                 dao.getUser(testUser.getUserName()));
     }
 
@@ -97,5 +97,13 @@ public class UserTest {
         Assert.assertEquals(testUser.getUserName(), user.getUserName());
         Assert.assertEquals("She who shall not be named", user.getRealName());
         Assert.assertEquals("newhashedpwd", user.getHashwd());
+    }
+
+    @Test
+    public void testGetAllUsers(){
+        dao.addUser(testUser);
+        List<User> users = dao.getAllUsers();
+        assertEquals(1, users.size());
+
     }
 }
