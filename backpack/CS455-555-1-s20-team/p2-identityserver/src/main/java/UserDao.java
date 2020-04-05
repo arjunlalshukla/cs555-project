@@ -4,6 +4,9 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.UpdateResult;
+import org.bson.BsonDocument;
+import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
 import org.bson.conversions.Bson;
@@ -48,6 +51,13 @@ public class UserDao extends AbstractIdentityDao {
         Bson query = Filters.eq("userName", userName);
         DeleteResult dResult = this.usersCollection.deleteOne(query);
         return dResult.getDeletedCount() == 1;
+    }
+
+    public boolean updateUserProperty(String userName, String field, String value){
+        Bson query = new Document("userName", userName);
+        Bson update = new Document(field, value);
+        UpdateResult updateResult = usersCollection.updateOne(query, new Document("$set", update));
+        return updateResult.getMatchedCount()==1;
     }
 }
 
