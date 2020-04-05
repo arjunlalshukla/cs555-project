@@ -84,4 +84,18 @@ public class UserTest {
                 dao.getUser(testUser.getUserName()));
     }
 
+
+    @Test
+    public void testModifyUser(){
+        dao.addUser(testUser);
+        assertTrue("You should be able to update the testDb user realname.",
+                dao.updateUserProperty(userName,"realName","She who shall not be named")
+                );
+        assertTrue("You should be able update the testDb user hashwd.",
+                dao.updateUserProperty(userName,"hashwd","newhashedpwd"));
+        User user = dao.getUser(testUser.getUserName());
+        Assert.assertEquals(testUser.getUserName(), user.getUserName());
+        Assert.assertEquals("She who shall not be named", user.getRealName());
+        Assert.assertEquals("newhashedpwd", user.getHashwd());
+    }
 }
