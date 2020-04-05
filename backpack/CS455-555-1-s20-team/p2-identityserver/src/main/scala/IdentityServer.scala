@@ -1,5 +1,3 @@
-case class User(login: String, real: String, uuid: String)
-
 object IdentityServer {
   def create(login: String, real: String, pw: String): Unit = {}
 
@@ -13,7 +11,7 @@ object IdentityServer {
 
   def UUIDs: Seq[String] = Seq()
 
-  def lookup(login: String): User = User("", "", "")
+  def lookup(login: String): User = new User()
 
-  def reverse_lookup(uuid: String): User = User("", "", "")
+  def reverse_lookup(uuid: String): User = new User()
 }
