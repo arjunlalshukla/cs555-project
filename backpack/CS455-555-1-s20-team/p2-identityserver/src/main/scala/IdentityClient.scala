@@ -60,8 +60,11 @@ final class IdentityClient extends Runnable {
     }
     if (password == null) {
       if (get != null) {
-        if (!Set("users", "uuids", "all").contains(get)) {
-          throw new GetOptionException
+        get match {
+          case "users" =>
+          case "uuids" =>
+          case "all" =>
+          case _ => throw new GetOptionException
         }
       } else if (lookup != null) {}
       else if (rev_lookup != null) {}
