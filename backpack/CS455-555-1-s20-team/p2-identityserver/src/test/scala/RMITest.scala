@@ -1,7 +1,4 @@
 import org.scalatest.FunSuite
-import java.rmi.registry.LocateRegistry.createRegistry
-import javax.rmi.ssl.SslRMIClientSocketFactory
-import javax.rmi.ssl.SslRMIServerSocketFactory
 
 final class RMITest extends FunSuite {
   test("--create option without real name") {
