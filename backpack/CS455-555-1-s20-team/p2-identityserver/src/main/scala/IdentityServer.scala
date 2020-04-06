@@ -29,10 +29,7 @@ object IdentityServer {
   //throws exception on duplicate username
   //null otherwise
   def create(login: String, real: String, pw: String): String = {
-    val user = new User()
-    user.setUserName(login)
-    user.setRealName(real)
-    user.setHashwd(pw)
+    val user = new User(login,real,pw)
     val uid = this.dao.addUser(user)
     if (uid == null){
       //error, user not created successfully
