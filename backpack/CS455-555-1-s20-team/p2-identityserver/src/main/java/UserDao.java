@@ -72,8 +72,8 @@ public class UserDao extends AbstractIdentityDao {
         return this.usersCollection.aggregate(pipeline).first();
     }
 
-    public List<User> getAllUsers(){
-        List<User> users = new ArrayList<>();
+    public ArrayList<User> getAllUsers(){
+        ArrayList<User> users = new ArrayList<>();
         List<Bson> pipeline = new ArrayList<>();
         Bson match = Aggregates.match(Filters.exists("userName"));
         Bson project = Aggregates.project(Projections.exclude("hashwd"));

@@ -37,7 +37,9 @@ object IdentityServer {
     if (uid == null){
       //error, user not created successfully
     }
-    //need to handle exception on client side in case user already exists
+    //need to handle MongoWriteException on client side in case user already exists
+    // I don't like that, it exposes the backend. better to throw our own exception class,
+    // but that may mean parsing the inner message for the exception...gross.
     uid
   }
 
@@ -53,19 +55,20 @@ object IdentityServer {
   }
 
   //returns all users or null
-  def all: Seq[User] = {
-    dao.getAllUsers.asInstanceOf[Seq[User]]
+  def all: Array[User] = {
+    dao.getAllUsers.toArray.map(_.asInstanceOf[User])
   }
 
   //returns all usernames or null
-  def users: Seq[String] = {
-    val users :Seq[User] = dao.getAllUsers.asInstanceOf[Seq[User]]
+  def users: Array[String] = {
+    val users :Array[User] = dao.getAllUsers.toArray.map(_.asInstanceOf[User])
     users.map{ user=> user.getUserName}
   }
 
   //returns all userID's or null
-  def UUIDs: Seq[String] ={
-    val users :Seq[User] = dao.getAllUsers.asInstanceOf[Seq[User]]
+  def UUIDs: Array[String] ={
+    val jUsers = dao.getAllUsers
+    val users : Array[User] = jUsers.toArray.map(_.asInstanceOf[User])
     users.map{ user=> user.getId.toString}
   }
 
@@ -74,5 +77,6 @@ object IdentityServer {
 
   //returns a user by userid
   def reverse_lookup(uuid: String): User = this.dao.getUserByUUID(uuid)
+
 
 }
