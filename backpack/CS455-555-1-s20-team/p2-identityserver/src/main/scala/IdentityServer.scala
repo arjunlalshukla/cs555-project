@@ -52,15 +52,27 @@ object IdentityServer {
     dao.updateUserProperty(oldlogin,pw,"userName",newlogin)
   }
 
+  //returns all users or null
+  def all: Seq[User] = {
+    dao.getAllUsers.asInstanceOf[Seq[User]]
+  }
 
-  def all: Seq[User] = Seq()
+  //returns all usernames or null
+  def users: Seq[String] = {
+    val users :Seq[User] = dao.getAllUsers.asInstanceOf[Seq[User]]
+    users.map{ user=> user.getUserName}
+  }
 
-  def users: Seq[String] = Seq()
+  //returns all userID's or null
+  def UUIDs: Seq[String] ={
+    val users :Seq[User] = dao.getAllUsers.asInstanceOf[Seq[User]]
+    users.map{ user=> user.getId.toString}
+  }
 
-  def UUIDs: Seq[String] = Seq()
+  //returns a user by login
+  def lookup(login: String): User = this.dao.getUser(login)
 
-  def lookup(login: String): User = null
-
+  //returns a user by userid
   def reverse_lookup(uuid: String): User = this.dao.getUserByUUID(uuid)
 
 }

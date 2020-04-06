@@ -1,10 +1,10 @@
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 import picocli.CommandLine.{
   MissingParameterException,
   UnmatchedArgumentException
 }
 
-class CLISuite extends FunSuite {
+class CLISuite extends AnyFunSuite {
   test("-h option") {
     IdentityClient(Array("-h")).run()
   }
