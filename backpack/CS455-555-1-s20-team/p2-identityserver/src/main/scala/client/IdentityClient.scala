@@ -64,7 +64,7 @@ final class IdentityClient extends Runnable {
       throw new OneQueryExcpetion
     }
     lazy val stub = getRegistry(server, IdentityServer.rmiPort)
-      .lookup("server.IdentityServer").asInstanceOf[IdentityServerInterface]
+      .lookup("IdentityServer").asInstanceOf[IdentityServerInterface]
     if (password == null) {
       if (get != null) {
         get match {

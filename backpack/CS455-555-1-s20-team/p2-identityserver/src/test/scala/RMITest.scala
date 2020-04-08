@@ -1,7 +1,37 @@
-import client.IdentityClient
-import org.scalatest.funsuite.AnyFunSuite
+import java.util.concurrent.TimeUnit
 
-final class RMITest extends AnyFunSuite {
+import org.scalatest.funsuite.AnyFunSuite
+import client.IdentityClient
+import org.scalatest.BeforeAndAfter
+import server.IdentityServer
+
+final class RMITerminatedException(ecode: Int) extends
+  Exception(s"RMI registry terminated with code $ecode")
+
+final class RMITest extends AnyFunSuite with BeforeAndAfter {
+
+  private[this] var rmiProc: Process = _
+
+  before {
+    rmiProc = Runtime.getRuntime
+      .exec("rmiregistry " + IdentityServer.rmiPort)
+    // wait for rmi to start up
+    Thread.sleep(10000)
+    try {
+      throw new RMITerminatedException(rmiProc.exitValue)
+    } catch { case IllegalThreadStateException =>
+      new IdentityServer("IdentityServer").bind()
+    }
+  }
+
+  after {
+    rmiProc.destroy()
+    if (!rmiProc.waitFor(3, TimeUnit.SECONDS)) {
+      rmiProc.destroyForcibly()
+      rmiProc.waitFor()
+    }
+  }
+
   test("--create option without real name") {
     IdentityClient(
       Array("-s", "localhost", "--create", "login", "--password", "foo")).run()

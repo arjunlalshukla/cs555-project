@@ -7,7 +7,7 @@ class ServerTestSuite extends AnyFunSuite {
   val realName="Harry Potter"
   val hashwd="somecrazyhashedpwd"
 
-  val ids = new IdentityServer("server.IdentityServer")
+  val ids = new IdentityServer("IdentityServer")
 
   test("Should be able to delete a user with a password"){
     ids.create(userName,realName, hashwd)
