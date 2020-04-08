@@ -5,6 +5,9 @@ import java.rmi.registry.LocateRegistry.getRegistry
 import picocli.CommandLine
 import server.{IdentityServer, IdentityServerInterface}
 
+/**
+ * client driver
+ */
 object IdentityClient {
 
   def main(args: Array[String]): Unit = {
@@ -14,6 +17,11 @@ object IdentityClient {
     IdentityClient(args).run()
   }
 
+  /**
+   * setup the client
+   * @param args args from command line
+   * @return the client, all setup and ready to go
+   */
   def apply(args: Array[String]): IdentityClient = {
     val idc = new IdentityClient
     val res = new CommandLine(idc).parseArgs(args: _*).errors
@@ -24,6 +32,9 @@ object IdentityClient {
   }
 }
 
+/**
+ * Identity Client implementation
+ */
 final class IdentityClient extends Runnable {
   @CommandLine.Option(names=Array("-s","--server"), required=true,
     description=Array("the identity server to connect to"))
@@ -55,6 +66,9 @@ final class IdentityClient extends Runnable {
   @CommandLine.Option(names=Array("-h", "--help"), usageHelp=true)
   private[this] var help: Boolean = false
 
+  /**
+   * overridden run method
+   */
   def run(): Unit = {
     if (help) {
       new CommandLine(this).usage(System.out)
@@ -109,6 +123,11 @@ final class IdentityClient extends Runnable {
     }
   }
 
+  /**
+   * convert a user's password to a hash for transmitting to the server
+   * @param pass the user's password
+   * @return the hashed value of the password
+   */
   def pass_to_hash(pass: String) : String = {
     String.format("%064x",
       new java.math.BigInteger(1,
