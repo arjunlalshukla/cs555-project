@@ -72,20 +72,26 @@ src
 ```
 
 ## Testing
-
+Database operations, client interface, and server-database interaction are all
+tested with either scalatest or JUnit. We wrote a test suite for RMI, but have
+not been able to get it to work. End-to-end client-server-database interaction
+was tested manually.
 
 ## Reflection
+Network error messages are extremely vague, and usually required us to research
+them before we understood what they were saying. The RMI test suite we worked on
+always failed on the SSLHandshake, in spite of calling exactly the same code as
+the manual tests. Something about the testing environment may be throwing it off,
+because it works perfectly outside of test. The software is extremely modularized,
+which made splitting up the work much easier, as well as testing and debugging.
 
+Our client is not set up well to be easily testable. We might have had to refactor
+it a little if we had gotten that far in developing RMITest.
 
 ## Video
 
+
 ## TODO
-* Hash the passwords
-* organize packages
 * javadocs
 * video
-* makefile
 * Finish README
-
-* RMI Test Suite
-* Docker ?

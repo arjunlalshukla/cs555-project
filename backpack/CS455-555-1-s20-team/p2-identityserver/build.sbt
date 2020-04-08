@@ -19,3 +19,4 @@ libraryDependencies += "com.lihaoyi" %% "os-lib" % "0.6.2"
 assemblyJarName in assembly := "p2-identityserver.jar"
 
 test in assembly := {}
+Test / fork := true

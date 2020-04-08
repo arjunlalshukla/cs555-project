@@ -2,21 +2,19 @@ import java.util.concurrent.TimeUnit
 
 import org.scalatest.funsuite.AnyFunSuite
 import client.IdentityClient
-import org.scalatest.BeforeAndAfter
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import server.IdentityServer
 import os._
 
 final class RMITerminatedException(ecode: Int) extends
   Exception(s"RMI registry terminated with code $ecode")
 
-final class RMITest extends AnyFunSuite with BeforeAndAfter {
+final class RMITest extends AnyFunSuite with BeforeAndAfterAll
+  with BeforeAndAfter {
 
   private[this] var rmiProc: Process = _
 
-  before {
-    System.setProperty("javax.net.ssl.trustStore", "Client_Truststore")
-    System.setProperty("java.security.policy", "mysecurity.policy")
-    System.setProperty("javax.net.ssl.trustStorePassword", "test123")
+  override def beforeAll(): Unit = {
     val pb = new ProcessBuilder
     pb.environment.put("CLASSPATH", (pwd/"target"/"scala-2.13"/"classes").toString +
       ":" + System.getenv("CLASSPATH"))
@@ -30,7 +28,7 @@ final class RMITest extends AnyFunSuite with BeforeAndAfter {
     }
   }
 
-  after {
+  override def afterAll(): Unit = {
     rmiProc.destroy()
     if (!rmiProc.waitFor(3, TimeUnit.SECONDS)) {
       rmiProc.destroyForcibly()
@@ -39,43 +37,42 @@ final class RMITest extends AnyFunSuite with BeforeAndAfter {
   }
 
   test("--create option without real name") {
-    IdentityClient(
-      Array("-s", "localhost", "--create", "login", "--password", "foo")).run()
+    IdentityClient.main(
+      Array("-s", "localhost", "--create", "login", "--password", "foo"))
   }
 
   test("--create option with real name") {
-    IdentityClient(Array("-s", "localhost", "--create", "login", "name",
-      "--password", "foo")).run()
+    IdentityClient.main(Array("-s", "localhost", "--create", "login", "name",
+      "--password", "foo"))
   }
 
   test("--delete option") {
-    IdentityClient(
-      Array("-s", "localhost", "--delete", "login", "--password", "foo")).run()
+    IdentityClient.main(
+      Array("-s", "localhost", "--delete", "login", "--password", "foo"))
   }
 
   test("--modify option") {
-    IdentityClient(
+    IdentityClient.main(
       Array("-s", "localhost", "--modify", "login", "new", "--password", "foo"))
-      .run()
   }
 
   test("--get option with users") {
-    IdentityClient(Array("-s", "localhost", "--get", "users")).run()
+    IdentityClient.main(Array("-s", "localhost", "--get", "users"))
   }
 
   test("--get option with uuids") {
-    IdentityClient(Array("-s", "localhost", "--get", "uuids")).run()
+    IdentityClient.main(Array("-s", "localhost", "--get", "uuids"))
   }
 
   test("--get option with all") {
-    IdentityClient(Array("-s", "localhost", "--get", "all")).run()
+    IdentityClient.main(Array("-s", "localhost", "--get", "all"))
   }
 
   test("--reverse-lookup option") {
-    IdentityClient(Array("-s", "localhost", "--reverse-lookup", "uuid")).run()
+    IdentityClient.main(Array("-s", "localhost", "--reverse-lookup", "uuid"))
   }
 
   test("--lookup option") {
-    IdentityClient(Array("-s", "localhost", "--lookup", "username")).run()
+    IdentityClient.main(Array("-s", "localhost", "--lookup", "username"))
   }
 }
