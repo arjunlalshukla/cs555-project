@@ -38,16 +38,16 @@ class ServerTestSuite extends AnyFunSuite {
     ids.delete(userName,null)
   }
 
-  test("Should get an exception when creating duplicate users"){
+  test("Should not be able to create duplicate users"){
     val uid = ids.create(userName,realName, hashwd)
     assert(uid != null)
-    assertThrows[MongoWriteException]{ids.create(userName,realName, hashwd)}
+    assert(null==ids.create(userName,realName, hashwd))
     assert(ids.delete(userName, hashwd))
   }
 
   test("Should not be able to create a user without a username"){
-    assertThrows[MongoWriteException]{ids.create(null,realName, hashwd)}
-    assertThrows[MongoWriteException]{ ids.create("",realName, hashwd)}
+    assert(null==ids.create(null,realName, hashwd))
+    assert(null==ids.create("",realName, hashwd))
   }
 
   test("Should not be able to delete without proper credentials"){
