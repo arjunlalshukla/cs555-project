@@ -11,6 +11,9 @@ import com.mongodb.client.{MongoClient, MongoClients}
 import javax.rmi.ssl.{SslRMIClientSocketFactory, SslRMIServerSocketFactory}
 import mongo.{User, UserDao}
 
+/**
+ * Defines the interface that will be exposed to remote clients
+ */
 sealed trait IdentityServerInterface extends Remote {
   @throws(classOf[RemoteException])
   def create(login: String, real: String, pw: String): String
@@ -30,6 +33,9 @@ sealed trait IdentityServerInterface extends Remote {
   def reverse_lookup(uuid: String): User
 }
 
+/**
+ * The server driver
+ */
 object IdentityServer {
 
   val rmiPort: Int = 5191
@@ -41,6 +47,11 @@ object IdentityServer {
     new IdentityServer(args.headOption.getOrElse("server.IdentityServer")).bind()
   }
 }
+
+/**
+ * Identity server class implements the exposed interface
+ * @param name the name for this server to register with RMI
+ */
 final class IdentityServer(val name: String)  extends IdentityServerInterface {
 
   private[this] val properties: Properties = new Properties()
@@ -52,18 +63,32 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
   private[this] val mongoLogger : ch.qos.logback.classic.Logger = LoggerFactory.getLogger("org.mongodb.driver").asInstanceOf[ch.qos.logback.classic.Logger]
   mongoLogger.setLevel(Level.OFF)
 
-
+  /**
+   * client builder method
+   * @param connectionString the URI string to use for connecting to the db
+   * @return an instance of a client to communicate with the db
+   */
   private[this] def mongoClient(connectionString: String): MongoClient = {
     val connString = new ConnectionString(connectionString)
     val mongoClient = MongoClients.create(connString)
     mongoClient
   }
 
+  /**
+   * get all the users from the database
+   * @return an array of User objects from the database
+   */
   private[this] def _allUsers: Array[User] =
     dao.getAllUsers.toArray.map(_.asInstanceOf[User])
 
-  //creates a new user and returns their UUID
-  //null otherwise
+
+  /**
+   * creates a new user and returns their UUID
+   * @param login the login name for the user
+   * @param real the real name for the user
+   * @param pw the password for the user
+   * @return the UUID of the new user, or null if unsuccessful
+   */
   def create(login: String, real: String, pw: String): String = {
     val user = new User(login,real,pw)
     try {val uid = dao.addUser(user)
@@ -77,11 +102,23 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
     }
   }
 
-  //returns true if successful, false otherwise
+
+  /**
+   * delete a user from the database
+   * @param login the login to delete
+   * @param pw the password for the account
+   * @return true if successful, false otherwise
+   */
   def delete(login: String, pw: String): Boolean = dao.deleteUser(login, pw)
 
-  //returns true if successful, false if username not found or bad password
-  //throws exception if attempt to modify username to existing username
+
+  /**
+   * modify an existing login
+   * @param oldlogin the existing user login to change
+   * @param pw the password for the user account
+   * @param newlogin the new login name to use
+   * @return true if successful, false otherwise
+   */
   def modify(oldlogin: String, pw: String, newlogin: String): Boolean =
     try {dao.updateUserProperty(oldlogin,pw,"userName",newlogin)}
   catch {
@@ -89,21 +126,43 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
   }
 
 
-  //returns all users or null
+  /**
+   * get all the users from the database
+   * @return an array of User objects or null if unsuccessful
+   */
   def all: Array[User] = _allUsers
 
-  //returns all usernames or null
+
+  /**
+   * get a list of all usernames in the server
+   * @return an array of usernames, or null
+   */
   def users: Array[String] = _allUsers.map(_.getUserName)
 
-  //returns all userID's or null
+  /**
+   * get a list of all UUIDs in the server
+   * @return an array of UUIDs, or null
+   */
   def UUIDs: Array[String] = _allUsers.map(_.getId.toString)
 
-  //returns a user by login
+  /**
+   * gets the user associated with a login
+   * @param login the user login to retrieve
+   * @return a User object representing the user in the database, or null
+   */
   def lookup(login: String): User = dao.getUser(login)
 
-  //returns a user by userid
+
+  /**
+   * gets the user associated with a UUID
+   * @param uuid the user UUID to retrieve
+   * @return a User object representing the user in the database, or null
+   */
   def reverse_lookup(uuid: String): User = dao.getUserByUUID(uuid)
 
+  /**
+   * Bind the server to the RMI server to expose it for use
+   */
   def bind(): Unit = {
     println(s"starting server.IdentityServer $name")
     getRegistry(IdentityServer.rmiPort)
