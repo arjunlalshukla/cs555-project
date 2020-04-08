@@ -69,7 +69,7 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
       uid
     }
     catch{
-      case e: MongoWriteException => e.getMessage
+      case e: MongoWriteException => null
     }
   }
 
