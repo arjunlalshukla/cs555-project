@@ -16,6 +16,12 @@ public class ConnectionTest {
     private MongoClient mongoClient;
     private String databaseName;
 
+    public ConnectionTest() throws IOException{
+        mongoUri = getProperty("mongodb.uri");
+        databaseName = getProperty("mongodb.database");
+        this.mongoClient=mongoClient(mongoUri);
+    }
+
     public static void init() throws IOException {
         properties = new Properties();
         properties.load(ClassLoader.getSystemResourceAsStream("application.properties"));
@@ -37,9 +43,6 @@ public class ConnectionTest {
 
     @Before
     public void setup() throws IOException {
-        mongoUri = getProperty("mongodb.uri");
-        databaseName = getProperty("mongodb.database");
-        this.mongoClient=mongoClient(mongoUri);
         this.dao = new UserDao(mongoClient, databaseName);
     }
 
