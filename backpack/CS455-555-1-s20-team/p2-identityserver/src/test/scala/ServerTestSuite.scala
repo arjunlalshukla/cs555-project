@@ -1,12 +1,13 @@
 import com.mongodb.MongoWriteException
 import org.scalatest.funsuite.AnyFunSuite
+import server.IdentityServer
 
 class ServerTestSuite extends AnyFunSuite {
   val userName="wizard1"
   val realName="Harry Potter"
   val hashwd="somecrazyhashedpwd"
 
-  val ids = new IdentityServer("IdentityServer")
+  val ids = new IdentityServer("server.IdentityServer")
 
   test("Should be able to delete a user with a password"){
     ids.create(userName,realName, hashwd)

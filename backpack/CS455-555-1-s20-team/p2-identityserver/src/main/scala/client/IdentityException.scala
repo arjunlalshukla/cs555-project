@@ -1,3 +1,5 @@
+package client
+
 abstract sealed class IdentityException(s: String) extends Exception(s)
 final class PasswordRequiredException extends
   IdentityException("option requires password option")

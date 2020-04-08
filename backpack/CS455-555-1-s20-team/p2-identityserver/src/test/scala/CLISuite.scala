@@ -1,8 +1,6 @@
+import client.{GetOptionException, PasswordIncompatibleException, PasswordRequiredException}
 import org.scalatest.funsuite.AnyFunSuite
-import picocli.CommandLine.{
-  MissingParameterException,
-  UnmatchedArgumentException
-}
+import picocli.CommandLine.{MissingParameterException, UnmatchedArgumentException}
 
 class CLISuite extends AnyFunSuite {
   test("-h option") {

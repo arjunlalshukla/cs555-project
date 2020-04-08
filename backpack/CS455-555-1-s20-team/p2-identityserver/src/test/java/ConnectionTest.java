@@ -1,6 +1,7 @@
 import com.mongodb.ConnectionString;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
+import mongo.UserDao;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

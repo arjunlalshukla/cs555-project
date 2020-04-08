@@ -22,13 +22,14 @@ to build the project:
 make
 ```
 
-to run the code:
+run the server
+```
+./server
 ```
 
+run the client
 ```
-
-```
-
+./client <args>
 ```
 
 clean up:
@@ -38,8 +39,37 @@ make clean
 
 
 ## Included Files
-
-
+```
+build.sbt - build file
+client - script to start the client
+Client_Truststore - SSL file for testing
+Makefile - make wrapper for sbt
+mysecurity.policy - SSL file for testing
+README.md - this file
+server - script to start the server
+Server.cer - SSL file for testing
+Server_Keystore - SSL file for testing
+src
+├── main
+│   ├── java
+│   │   ├── mongo.AbstractIdentityDao.java
+│   │   ├── mongo.User.java
+│   │   └── mongo.UserDao.java
+│   ├── resources
+│   │   └── application.properties
+│   └── scala
+│       ├── client.IdentityClient.scala
+│       ├── client.IdentityException.scala
+│       └── server.IdentityServer.scala
+└── test
+    ├── java
+    │   ├── ConnectionTest.java
+    │   └── UserTest.java
+    └── scala
+        ├── CLISuite.scala
+        ├── RMITest.scala
+        └── ServerTestSuite.scala
+```
 
 ## Testing
 

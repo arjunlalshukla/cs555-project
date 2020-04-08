@@ -2,6 +2,8 @@ import com.mongodb.ConnectionString;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
+import mongo.User;
+import mongo.UserDao;
 import org.bson.Document;
 import org.junit.After;
 import org.junit.Assert;
@@ -81,7 +83,7 @@ public class UserTest {
                 "You should be able to delete correctly the testDb user.",
                 dao.deleteUser(testUser.getUserName(),testUser.getHashwd()));
         assertNull(
-                "User data should not be found after user been deleted.",
+                "mongo.User data should not be found after user been deleted.",
                 dao.getUser(testUser.getUserName()));
 
         //Deleting user with no password set
@@ -93,7 +95,7 @@ public class UserTest {
                 "You should be able to delete correctly the testDb user.",
                 dao.deleteUser(testUser.getUserName(),null));
         assertNull(
-                "User data should not be found after user been deleted.",
+                "mongo.User data should not be found after user been deleted.",
                 dao.getUser(testUser.getUserName()));
     }
 
