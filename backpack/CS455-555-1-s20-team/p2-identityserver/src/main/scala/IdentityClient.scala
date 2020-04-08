@@ -79,12 +79,20 @@ final class IdentityClient extends Runnable {
       }
     } else {
       if (create != null) {
-        println(create.mkString(" "))
-        stub.create(create(0), create.lift(1).getOrElse(create(0)), pass_to_hash(password))
+        stub.create(create(0), create.lift(1).getOrElse(create(0)), pass_to_hash(password)) match {
+          case null => println(s"Failed to create user ${create(0)}")
+          case id: String => println(s"Created user ${create(0)} with id $id")
+        }
       } else if (modify != null) {
-        stub.modify(modify(0), pass_to_hash(password), modify(1))
+        stub.modify(modify(0), pass_to_hash(password), modify(1)) match {
+          case false => println("Failed to update user")
+          case true => println(s"Successfully modified user ${modify(0)}")
+        }
       } else if (delete != null) {
-        stub.delete(delete, pass_to_hash(password))
+        stub.delete(delete, pass_to_hash(password)) match {
+          case false => println(s"Removed user $delete")
+          case true => println(s"Failed to remove user $delete")
+        }
       } else {
         throw new PasswordIncompatibleException
       }
