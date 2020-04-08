@@ -14,6 +14,9 @@ libraryDependencies += "org.mongodb" % "mongodb-driver-sync" % "4.0.1"
 libraryDependencies += "junit" % "junit" % "4.13" % Test
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.3"
 
+libraryDependencies += "com.lihaoyi" %% "os-lib" % "0.6.2"
+
 assemblyJarName in assembly := "p2-identityserver.jar"
 
 test in assembly := {}
+Test / fork := true

@@ -64,7 +64,7 @@ final class IdentityClient extends Runnable {
       throw new OneQueryExcpetion
     }
     lazy val stub = getRegistry(server, IdentityServer.rmiPort)
-      .lookup("server.IdentityServer").asInstanceOf[IdentityServerInterface]
+      .lookup("IdentityServer").asInstanceOf[IdentityServerInterface]
     if (password == null) {
       if (get != null) {
         get match {
@@ -83,7 +83,11 @@ final class IdentityClient extends Runnable {
       }
     } else {
       if (create != null) {
-        stub.create(create(0), create.lift(1).getOrElse(create(0)), pass_to_hash(password)) match {
+        stub.create(
+          create(0),
+          create.lift(1).getOrElse(create(0)),
+          pass_to_hash(password)
+        ) match {
           case null => println(s"Failed to create user ${create(0)}")
           case id: String => println(s"Created user ${create(0)} with id $id")
         }
