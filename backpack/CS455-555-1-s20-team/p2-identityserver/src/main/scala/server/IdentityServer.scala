@@ -5,7 +5,7 @@ import java.rmi.server.UnicastRemoteObject
 import java.rmi.{Remote, RemoteException}
 import java.util.Properties
 
-import com.mongodb.ConnectionString
+import com.mongodb.{ConnectionString, MongoWriteException}
 import com.mongodb.client.{MongoClient, MongoClients}
 import javax.rmi.ssl.{SslRMIClientSocketFactory, SslRMIServerSocketFactory}
 import mongo.{User, UserDao}
@@ -59,18 +59,18 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
     dao.getAllUsers.toArray.map(_.asInstanceOf[User])
 
   //creates a new user and returns their UUID
-  //throws exception on duplicate username
   //null otherwise
   def create(login: String, real: String, pw: String): String = {
     val user = new User(login,real,pw)
-    val uid = dao.addUser(user)
-    if (uid == null){
-      //error, user not created successfully
+    try {val uid = dao.addUser(user)
+      if (uid == null){
+        //error, user not created successfully
+      }
+      uid
     }
-    //need to handle MongoWriteException on client side in case user already exists
-    // I don't like that, it exposes the backend. better to throw our own exception class,
-    // but that may mean parsing the inner message for the exception...gross.
-    uid
+    catch{
+      case e: MongoWriteException => e.getMessage
+    }
   }
 
   //returns true if successful, false otherwise
@@ -79,7 +79,11 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
   //returns true if successful, false if username not found or bad password
   //throws exception if attempt to modify username to existing username
   def modify(oldlogin: String, pw: String, newlogin: String): Boolean =
-    dao.updateUserProperty(oldlogin,pw,"userName",newlogin)
+    try {dao.updateUserProperty(oldlogin,pw,"userName",newlogin)}
+  catch {
+    case e: MongoWriteException => false
+  }
+
 
   //returns all users or null
   def all: Array[User] = _allUsers
