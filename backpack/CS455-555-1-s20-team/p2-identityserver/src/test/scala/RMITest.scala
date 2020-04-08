@@ -4,6 +4,7 @@ import org.scalatest.funsuite.AnyFunSuite
 import client.IdentityClient
 import org.scalatest.BeforeAndAfter
 import server.IdentityServer
+import os._
 
 final class RMITerminatedException(ecode: Int) extends
   Exception(s"RMI registry terminated with code $ecode")
@@ -13,13 +14,18 @@ final class RMITest extends AnyFunSuite with BeforeAndAfter {
   private[this] var rmiProc: Process = _
 
   before {
-    rmiProc = Runtime.getRuntime
-      .exec("rmiregistry " + IdentityServer.rmiPort)
+    System.setProperty("javax.net.ssl.trustStore", "Client_Truststore")
+    System.setProperty("java.security.policy", "mysecurity.policy")
+    System.setProperty("javax.net.ssl.trustStorePassword", "test123")
+    val pb = new ProcessBuilder
+    pb.environment.put("CLASSPATH", (pwd/"target"/"scala-2.13"/"classes").toString +
+      ":" + System.getenv("CLASSPATH"))
+    rmiProc = pb.command("rmiregistry",  IdentityServer.rmiPort.toString).start()
     // wait for rmi to start up
     Thread.sleep(10000)
     try {
       throw new RMITerminatedException(rmiProc.exitValue)
-    } catch { case IllegalThreadStateException =>
+    } catch { case _: IllegalThreadStateException =>
       new IdentityServer("IdentityServer").bind()
     }
   }
