@@ -5,6 +5,9 @@ import org.bson.types.ObjectId;
 
 import java.io.Serializable;
 
+/**
+ * POJO (Plain Old Java Object) class to represent the User model
+ */
 public class User implements Serializable {
 
     private String userName;
@@ -55,6 +58,7 @@ public class User implements Serializable {
 
     public void setId(ObjectId uuid) { this.id = uuid; }
 
+    @Override
     public String toString() {
         return String.join(" | ", userName, realName, id.toString());
     }

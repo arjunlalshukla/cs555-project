@@ -4,7 +4,9 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoDatabase;
 import org.bson.types.ObjectId;
 
-
+/**
+ * Abstract base class to handle common functionality for mongo DAO's
+ */
 public abstract class AbstractIdentityDao {
 
         protected MongoClient mongoClient;
