@@ -4,7 +4,6 @@ import java.rmi.registry.LocateRegistry.getRegistry
 import java.rmi.server.UnicastRemoteObject
 import java.rmi.{Remote, RemoteException}
 import java.util.Properties
-
 import ch.qos.logback.classic.Level
 import org.slf4j._
 import com.mongodb.{ConnectionString, MongoWriteException}
@@ -74,7 +73,7 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
       uid
     }
     catch{
-      case MongoWriteException => null
+      case e: MongoWriteException => null
     }
   }
 
@@ -86,7 +85,7 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
   def modify(oldlogin: String, pw: String, newlogin: String): Boolean =
     try {dao.updateUserProperty(oldlogin,pw,"userName",newlogin)}
   catch {
-    case MongoWriteException => false
+    case e: MongoWriteException => false
   }
 
 
