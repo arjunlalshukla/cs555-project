@@ -6,10 +6,6 @@ class ServerTestSuite extends AnyFunSuite {
   val realName="Harry Potter"
   val hashwd="somecrazyhashedpwd"
 
-  //System.setProperty("javax.net.ssl.trustStore", "Client_Truststore")
-  //System.setProperty("java.security.policy", "mysecurity.policy")
-  //System.setProperty("javax.net.ssl.trustStorePassword", "test123")
-
   val ids = new IdentityServer("IdentityServer")
 
   test("Should be able to delete a user with a password"){

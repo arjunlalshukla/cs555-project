@@ -82,6 +82,5 @@ public class UserDao extends AbstractIdentityDao {
         this.usersCollection.aggregate(pipeline).into(users);
         return users;
     }
-
 }
 

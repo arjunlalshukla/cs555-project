@@ -1,7 +1,9 @@
 import org.bson.codecs.pojo.annotations.BsonId;
 import org.bson.types.ObjectId;
 
-public class User {
+import java.io.Serializable;
+
+public class User implements Serializable {
 
     private String userName;
     private String realName;
@@ -51,4 +53,7 @@ public class User {
 
     public void setId(ObjectId uuid) { this.id = uuid; }
 
+    public String toString() {
+        return String.join(" | ", userName, realName, id.toString());
+    }
 }

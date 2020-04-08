@@ -79,9 +79,10 @@ final class IdentityClient extends Runnable {
       }
     } else {
       if (create != null) {
-        stub.create(create(0), create.lift(0).getOrElse(create(0)), password)
+        println(create.mkString(" "))
+        stub.create(create(0), create.lift(1).getOrElse(create(0)), password)
       } else if (modify != null) {
-        stub.modify(modify(0), modify(1), password)
+        stub.modify(modify(0), password, modify(1))
       } else if (delete != null) {
         stub.delete(delete, password)
       } else {

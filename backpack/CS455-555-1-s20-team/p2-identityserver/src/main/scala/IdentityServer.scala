@@ -42,15 +42,10 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
 
   private[this] val properties: Properties = new Properties()
   properties.load(ClassLoader.getSystemResourceAsStream("application.properties"))
-  private[this] val mongoUri: String = getProperty("mongodb.uri")
-  private[this] val databaseName: String = getProperty("mongodb.database")
+  private[this] val mongoUri: String = properties.getProperty("mongodb.uri")
+  private[this] val databaseName: String = properties.getProperty("mongodb.database")
   private[this] val mongoClient: MongoClient = mongoClient(mongoUri)
   private[this] val dao: UserDao = new UserDao(mongoClient, databaseName)
-
-  @throws[IOException]
-  private[this] def getProperty(propertyKey: String): String = {
-    properties.getProperty(propertyKey)
-  }
 
   private[this] def mongoClient(connectionString: String): MongoClient = {
     val connString = new ConnectionString(connectionString)
