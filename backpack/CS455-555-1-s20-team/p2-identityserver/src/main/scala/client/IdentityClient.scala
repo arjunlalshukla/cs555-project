@@ -88,14 +88,16 @@ final class IdentityClient extends Runnable {
           case id: String => println(s"Created user ${create(0)} with id $id")
         }
       } else if (modify != null) {
-        stub.modify(modify(0), pass_to_hash(password), modify(1)) match {
-          case false => println("Failed to update user")
-          case true => println(s"Successfully modified user ${modify(0)}")
+        if (stub.modify(modify(0), pass_to_hash(password), modify(1))) {
+          println(s"Successfully modified user ${modify(0)}")
+        } else {
+          println("Failed to update user")
         }
       } else if (delete != null) {
-        stub.delete(delete, pass_to_hash(password)) match {
-          case false => println(s"Removed user $delete")
-          case true => println(s"Failed to remove user $delete")
+        if (stub.delete(delete, pass_to_hash(password))) {
+          println(s"Failed to remove user $delete")
+        } else {
+          println(s"Removed user $delete")
         }
       } else {
         throw new PasswordIncompatibleException
