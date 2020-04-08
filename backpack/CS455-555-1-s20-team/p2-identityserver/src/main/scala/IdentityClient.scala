@@ -80,14 +80,20 @@ final class IdentityClient extends Runnable {
     } else {
       if (create != null) {
         println(create.mkString(" "))
-        stub.create(create(0), create.lift(1).getOrElse(create(0)), password)
+        stub.create(create(0), create.lift(1).getOrElse(create(0)), pass_to_hash(password))
       } else if (modify != null) {
-        stub.modify(modify(0), password, modify(1))
+        stub.modify(modify(0), pass_to_hash(password), modify(1))
       } else if (delete != null) {
-        stub.delete(delete, password)
+        stub.delete(delete, pass_to_hash(password))
       } else {
         throw new PasswordIncompatibleException
       }
     }
+  }
+
+  def pass_to_hash(pass: String) : String = {
+    String.format("%064x",
+      new java.math.BigInteger(1,
+        java.security.MessageDigest.getInstance("SHA-256").digest(pass.getBytes("UTF-8"))))
   }
 }
