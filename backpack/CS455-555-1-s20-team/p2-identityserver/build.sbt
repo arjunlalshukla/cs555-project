@@ -12,7 +12,7 @@ libraryDependencies += "info.picocli" % "picocli" % "4.2.0"
 
 libraryDependencies += "org.mongodb" % "mongodb-driver-sync" % "4.0.1"
 libraryDependencies += "junit" % "junit" % "4.13" % Test
-libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.3" % Runtime
+libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.3"
 
 assemblyJarName in assembly := "p2-identityserver.jar"
 

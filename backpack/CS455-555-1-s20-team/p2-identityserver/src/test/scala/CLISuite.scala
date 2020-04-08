@@ -1,4 +1,4 @@
-import client.{GetOptionException, PasswordIncompatibleException, PasswordRequiredException}
+import client.{GetOptionException, IdentityClient, PasswordIncompatibleException, PasswordRequiredException}
 import org.scalatest.funsuite.AnyFunSuite
 import picocli.CommandLine.{MissingParameterException, UnmatchedArgumentException}
 

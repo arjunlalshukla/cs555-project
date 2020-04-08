@@ -1,6 +1,7 @@
-import org.scalatest.FunSuite
+import client.IdentityClient
+import org.scalatest.funsuite.AnyFunSuite
 
-final class RMITest extends FunSuite {
+final class RMITest extends AnyFunSuite {
   test("--create option without real name") {
     IdentityClient(
       Array("-s", "localhost", "--create", "login", "--password", "foo")).run()

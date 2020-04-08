@@ -5,6 +5,8 @@ import java.rmi.server.UnicastRemoteObject
 import java.rmi.{Remote, RemoteException}
 import java.util.Properties
 
+import ch.qos.logback.classic.Level
+import org.slf4j._
 import com.mongodb.{ConnectionString, MongoWriteException}
 import com.mongodb.client.{MongoClient, MongoClients}
 import javax.rmi.ssl.{SslRMIClientSocketFactory, SslRMIServerSocketFactory}
@@ -48,6 +50,9 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
   private[this] val databaseName: String = properties.getProperty("mongodb.database")
   private[this] val mongoClient: MongoClient = mongoClient(mongoUri)
   private[this] val dao: UserDao = new UserDao(mongoClient, databaseName)
+  private[this] val mongoLogger : ch.qos.logback.classic.Logger = LoggerFactory.getLogger("org.mongodb.driver").asInstanceOf[ch.qos.logback.classic.Logger]
+  mongoLogger.setLevel(Level.OFF)
+
 
   private[this] def mongoClient(connectionString: String): MongoClient = {
     val connString = new ConnectionString(connectionString)
@@ -69,7 +74,7 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
       uid
     }
     catch{
-      case e: MongoWriteException => null
+      case MongoWriteException => null
     }
   }
 
@@ -81,7 +86,7 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
   def modify(oldlogin: String, pw: String, newlogin: String): Boolean =
     try {dao.updateUserProperty(oldlogin,pw,"userName",newlogin)}
   catch {
-    case e: MongoWriteException => false
+    case MongoWriteException => false
   }
 
 
