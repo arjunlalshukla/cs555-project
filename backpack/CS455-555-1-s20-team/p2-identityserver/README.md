@@ -78,6 +78,7 @@ not been able to get it to work. End-to-end client-server-database interaction
 was tested manually.
 
 ## Reflection
+Arjun-
 Network error messages are extremely vague, and usually required us to research
 them before we understood what they were saying. The RMI test suite we worked on
 always failed on the SSLHandshake, in spite of calling exactly the same code as
@@ -88,10 +89,21 @@ which made splitting up the work much easier, as well as testing and debugging.
 Our client is not set up well to be easily testable. We might have had to refactor
 it a little if we had gotten that far in developing RMITest.
 
+Ahmad-
+We spent a lot of time developing tests for each level of our application, including
+the back end, front end cli, and middleware. Because of the current situation, we 
+practiced much less pair programming for this project and instead separated the concerns
+to where Arjun was able to work on the front end while I worked on the back end simultaneously.
+This worked well because it ensured the front end had no knowledge of the back end and vice-a-versa.
+The server was developed as a middle layer between the client and the database, with its own
+set of tests for the interface it supports. Having individual test suites for each layer made
+implementation of the RMI calls extremely fast as we knew for certain that any bugs we 
+encountered were located in the RMI calls from the client to the server. Overall this project
+has been a lot of fun and I learned a lot by going through with the MongoDB implementation. 
+
 ## Video
 
 
 ## TODO
-* javadocs
 * video
-* Finish README
+
