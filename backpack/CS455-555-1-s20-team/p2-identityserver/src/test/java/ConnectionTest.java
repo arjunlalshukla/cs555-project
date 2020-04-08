@@ -61,7 +61,7 @@ public class ConnectionTest {
 
     @Test
     public void testUsersCount(){
-        long expected = 0;
-        Assert.assertEquals("Check the connection string", expected, dao.getUsersCount());
+        long expected = 1;
+        Assert.assertTrue("Check the connection string", expected <= dao.getUsersCount());
     }
 }
