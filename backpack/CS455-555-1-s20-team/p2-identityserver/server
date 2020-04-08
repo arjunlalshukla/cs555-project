@@ -2,4 +2,4 @@
 make
 CLASSPATH=$(pwd)/target/scala-2.13/classes:$CLASSPATH rmiregistry 5191 &
 sleep 10
-java -Djava.security.policy=mysecurity.policy -cp ./target/scala-2.13/p2-identityserver.jar IdentityServer
+java -Djava.security.policy=mysecurity.policy -cp ./target/scala-2.13/p2-identityserver.jar server.IdentityServer

@@ -1,12 +1,14 @@
-import java.io.IOException
-import java.util.Properties
-import com.mongodb.ConnectionString
-import com.mongodb.client.{MongoClient, MongoClients}
-import java.rmi.{Remote, RemoteException}
+package server
+
 import java.rmi.registry.LocateRegistry.getRegistry
 import java.rmi.server.UnicastRemoteObject
-import javax.rmi.ssl.SslRMIClientSocketFactory
-import javax.rmi.ssl.SslRMIServerSocketFactory
+import java.rmi.{Remote, RemoteException}
+import java.util.Properties
+
+import com.mongodb.ConnectionString
+import com.mongodb.client.{MongoClient, MongoClients}
+import javax.rmi.ssl.{SslRMIClientSocketFactory, SslRMIServerSocketFactory}
+import mongo.{User, UserDao}
 
 sealed trait IdentityServerInterface extends Remote {
   @throws(classOf[RemoteException])
@@ -35,7 +37,7 @@ object IdentityServer {
     System.setProperty("javax.net.ssl.keyStore", "Server_Keystore")
     System.setProperty("javax.net.ssl.keyStorePassword", "test123")
     System.setProperty("java.security.policy", "mysecurity.policy")
-    new IdentityServer(args.headOption.getOrElse("IdentityServer")).bind()
+    new IdentityServer(args.headOption.getOrElse("server.IdentityServer")).bind()
   }
 }
 final class IdentityServer(val name: String)  extends IdentityServerInterface {
@@ -95,7 +97,7 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
   def reverse_lookup(uuid: String): User = dao.getUserByUUID(uuid)
 
   def bind(): Unit = {
-    println(s"starting IdentityServer $name")
+    println(s"starting server.IdentityServer $name")
     getRegistry(IdentityServer.rmiPort)
       .bind(
         name,
@@ -106,6 +108,6 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
           new SslRMIServerSocketFactory
         )
       )
-    println(s"IdentityServer '$name' started and registered'")
+    println(s"server.IdentityServer '$name' started and registered'")
   }
 }

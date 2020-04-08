@@ -1,5 +1,9 @@
-import picocli.CommandLine
+package client
+
 import java.rmi.registry.LocateRegistry.getRegistry
+
+import picocli.CommandLine
+import server.{IdentityServer, IdentityServerInterface}
 
 object IdentityClient {
 
@@ -60,7 +64,7 @@ final class IdentityClient extends Runnable {
       throw new OneQueryExcpetion
     }
     lazy val stub = getRegistry(server, IdentityServer.rmiPort)
-      .lookup("IdentityServer").asInstanceOf[IdentityServerInterface]
+      .lookup("server.IdentityServer").asInstanceOf[IdentityServerInterface]
     if (password == null) {
       if (get != null) {
         get match {
