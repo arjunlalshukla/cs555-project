@@ -107,15 +107,15 @@ final class IdentityClient extends Runnable {
         }
       } else if (modify != null) {
         if (stub.modify(modify(0), pass_to_hash(password), modify(1))) {
-          println(s"Successfully modified user ${modify(0)}")
+          println(s"Successfully updated user ${modify(0)} to ${modify(1)}")
         } else {
-          println("Failed to update user")
+          println(s"Failed to update user ${modify(0)}")
         }
       } else if (delete != null) {
         if (stub.delete(delete, pass_to_hash(password))) {
-          println(s"Failed to remove user $delete")
-        } else {
           println(s"Removed user $delete")
+        } else {
+          println(s"Failed to remove user $delete")
         }
       } else {
         throw new PasswordIncompatibleException
