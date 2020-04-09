@@ -101,12 +101,8 @@ implementation of the RMI calls extremely fast as we knew for certain that any b
 encountered were located in the RMI calls from the client to the server. Overall this project
 has been a lot of fun and I learned a lot by going through with the MongoDB implementation. 
 
-## Video
+## Videos
 
 Getting SBT and running the server: [https://youtu.be/NWc0hKjXjSA](https://youtu.be/NWc0hKjXjSA)
 
-Client functionality demo: 
-
-## TODO
-* video
-
+Client functionality demo: [https://youtu.be/E6ST5Hl6T_Y](https://youtu.be/E6ST5Hl6T_Y)
