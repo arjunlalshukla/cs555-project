@@ -1,9 +1,11 @@
 package server
 
+import java.net.InetAddress
 import java.rmi.registry.LocateRegistry.getRegistry
 import java.rmi.server.UnicastRemoteObject
 import java.rmi.{Remote, RemoteException}
 import java.util.Properties
+
 import ch.qos.logback.classic.Level
 import org.slf4j._
 import com.mongodb.{ConnectionString, MongoWriteException}
@@ -175,6 +177,6 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
           new SslRMIServerSocketFactory
         )
       )
-    println(s"IdentityServer '$name' started and registered'")
+    println(s"IdentityServer '$name' started and registered' @ ${InetAddress.getLocalHost.getHostAddress}")
   }
 }

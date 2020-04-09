@@ -43,6 +43,7 @@ make clean
 build.sbt - build file
 client - script to start the client
 Client_Truststore - SSL file for testing
+Dockerfile - Docker definition file for containerizing the server
 Makefile - make wrapper for sbt
 mysecurity.policy - SSL file for testing
 README.md - this file
@@ -101,8 +102,15 @@ implementation of the RMI calls extremely fast as we knew for certain that any b
 encountered were located in the RMI calls from the client to the server. Overall this project
 has been a lot of fun and I learned a lot by going through with the MongoDB implementation. 
 
+## Extras
+
+We implemented additional features in this project including the Docker file to host the server in addition
+to a clustered, no-SQL database as the back end.
+
 ## Videos
 
 Getting SBT and running the server: [https://youtu.be/NWc0hKjXjSA](https://youtu.be/NWc0hKjXjSA)
 
 Client functionality demo: [https://youtu.be/E6ST5Hl6T_Y](https://youtu.be/E6ST5Hl6T_Y)
+
+Docker demonstration video: [https://youtu.be/b7eJH7J9Yrg](https://youtu.be/b7eJH7J9Yrg)
