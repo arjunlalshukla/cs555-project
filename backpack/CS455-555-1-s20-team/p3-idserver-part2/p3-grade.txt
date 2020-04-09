@@ -1,0 +1,34 @@
+
+Members:
+
+Grade: /140
+
+Late penalty:
+
+Submission quality:
+	-project layout:
+	-build:
+	-pregenerated server/client keystores and passwords (statically in the code is ok):
+
+Features:
+	-Election algorithm implementation (30 points):
+	-Consistency implementation (30 points):
+	-Fault tolerance (20 points):
+		-Backup server failure and recovery:
+		-Coordinator failure and recovery:
+
+	-Uses SSL: 
+	-Checkpointing: 
+
+Video (20 points):
+
+White Paper (20 points): 
+
+Code style and documentation (20 points): 
+	-README.md file:
+	-testing:
+	-Scripts for running project on onyx lab and on localhost (10 points):
+	-coding style:
+	-Javadocs: 
+
+Comments:
