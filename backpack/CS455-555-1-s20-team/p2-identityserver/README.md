@@ -103,6 +103,9 @@ has been a lot of fun and I learned a lot by going through with the MongoDB impl
 
 ## Video
 
+Getting SBT and running the server: [https://youtu.be/NWc0hKjXjSA](https://youtu.be/NWc0hKjXjSA)
+
+Client functionality demo: 
 
 ## TODO
 * video
