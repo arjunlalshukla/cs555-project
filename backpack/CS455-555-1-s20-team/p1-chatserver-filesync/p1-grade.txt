@@ -1,44 +1,33 @@
 
-Members:
+Members: Ahmad, Arjun
 
-Grade:   /100 
+Grade:   110/110 
 
 Late penalty:
 
 Testing:
-    -Build:  
+    -Build:   ok
     -Basic operation: 
-        -Chat server:
-            -Basic functionality (60 points):
-                -connect:
-                -list:
-                -nick:
-                -join:
-                -leave:
-                -stats:
-                -help:
-                -quit:
-            -Multi-threaded with max thread limit (extra credit for undergrads, +10 points)):
-            -Client GUI (+10 extra credit):
 
         -File sync:
-            -Use of fssrc file:
-            -File add:
-            -File deletes:
+            -Use of fssrc file: ok
+            -File add: ok
+            -File deletes: ok
             -Extra credit:
-                -Multithreaded file sync (+10 points, extra credit for undergraduates):
+                -Multithreaded file sync (+10 points, extra credit for undergraduates): ok
                 -Synchronized subfolders (+10 points, extra credit):
 
-    -Auto self destruct (5 points):   
-    -Shutdown hook (5 points):
+    -Auto self destruct (5 points):    ok
+    -Shutdown hook (5 points): ok
 
 Demonstration of functionality:
-    -Demo video (10 points):
+    -Demo video (10 points): Good video but  would like both team members to speak in it :-)
 
 Code style and documentation: 
-    -README (10 points):
-    -Using OO protocol (10 points):  
-    -Javadocs:
+    -README (10 points): ok
+    -Using OO protocol (10 points):   ok
+    -Javadocs: N/A
 
 Comments:
+	-The scala code is nice to read and surprisingly easy to follow!
 
