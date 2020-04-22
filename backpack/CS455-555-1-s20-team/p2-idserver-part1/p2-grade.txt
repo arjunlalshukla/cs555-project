@@ -1,0 +1,45 @@
+
+Members: Arjun, Ahmad
+Team: 020
+
+Grade:   115/100
+
+Late penalty:
+
+Submission quality:
+	-project layout: ok
+	-build: ok
+	-pregenerated server/client keystores and passwords (statically in the code is ok): ok
+
+Features: 
+	-basic operations (50 points): 
+		-create: ok
+		-delete: ok
+		-lookup: ok
+		-reverse-lookup: ok
+		-modify: ok
+		-get users|uuids|all: ok
+	-security (10 points):
+		-encrypted passwords: ok
+		-SSL communication: ok
+	-persistence (10 points)
+		-save/restore state: ok
+		-shutdown handler: ok
+	-thread safety: ok (Scala :-))
+    
+Testing (20 points):	
+	-quality of testing: ok
+	-testing documentation (in README): ok
+	
+Extra credit: 
+	-using embedded SQL database or a object store (+5 points): 
+	-using distributed no-SQL database (+10 points):  ok, +10
+
+Code style/documentation (10 points):  
+	-README file:  ok
+	-demo video: ok, nice set of videos... +5
+	-coding style: ok
+	-javadocs: ok
+
+Comments:
+	-Very nice project!
