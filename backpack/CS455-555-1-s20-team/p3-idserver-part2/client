@@ -1,2 +1,2 @@
 #!/bin/sh
-java  -cp ./target/scala-2.13/p2-identityserver.jar client.IdentityClient "$@"
+java  -cp ./target/scala-2.13/p3-idserver-part2.jar client.IdentityClient "$@"
