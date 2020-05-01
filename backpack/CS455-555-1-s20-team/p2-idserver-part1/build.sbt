@@ -1,4 +1,4 @@
-name := "p2-identityserver"
+name := "p2-idserver-part1"
 
 version := "0.1"
 
@@ -16,7 +16,7 @@ libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.3"
 
 libraryDependencies += "com.lihaoyi" %% "os-lib" % "0.6.2"
 
-assemblyJarName in assembly := "p2-identityserver.jar"
+assemblyJarName in assembly := "p2-idserver-part1.jar"
 
 test in assembly := {}
 Test / fork := true
