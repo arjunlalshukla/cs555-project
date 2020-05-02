@@ -2,7 +2,7 @@ package server
 
 import java.net.{ConnectException, InetAddress}
 import java.rmi.registry.LocateRegistry.getRegistry
-import java.rmi.server.UnicastRemoteObject
+import java.rmi.server.{RMISocketFactory, UnicastRemoteObject}
 import java.rmi.{Remote, RemoteException}
 import java.util.Properties
 
@@ -35,6 +35,9 @@ sealed trait IdentityServerInterface extends Remote {
   def lookup(login: String): ServerResponse
   @throws(classOf[RemoteException])
   def reverse_lookup(uuid: String): ServerResponse
+}
+
+sealed trait IntraNetInterface extends Remote {
   @throws(classOf[RemoteException])
   def heartbeat(): Unit
 }
@@ -55,7 +58,8 @@ case class RevLookReturn(user: User) extends ServerResponse
  */
 object IdentityServer {
 
-  val rmiPort: Int = 5191
+  val clientRMIPort: Int = 5191
+  val intraNetRMIPort: Int = 5192
 
   def main(args: Array[String]): Unit = {
     System.setProperty("javax.net.ssl.keyStore", "Server_Keystore")
@@ -71,7 +75,8 @@ object IdentityServer {
  * Identity server class implements the exposed interface
  * @param name the name for this server to register with RMI
  */
-final class IdentityServer(val name: String)  extends IdentityServerInterface {
+final class IdentityServer(val name: String)
+  extends IdentityServerInterface with IntraNetInterface {
 
   private[this] val properties: Properties = new Properties()
   properties.load(ClassLoader.getSystemResourceAsStream("application.properties"))
@@ -113,8 +118,8 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
       .map(x => s"${x>>24&0xff}.${x>>16&0xff}.${x>>8&0xff}.${x&0xff}")
 
     val responses = serverList.takeWhile(_ != ip).takeWhile { ipAddr =>
-      lazy val stub = getRegistry(ipAddr, IdentityServer.rmiPort)
-        .lookup("IdentityServer").asInstanceOf[IdentityServerInterface]
+      lazy val stub = getRegistry(ipAddr, IdentityServer.intraNetRMIPort)
+        .lookup("IdentityServer").asInstanceOf[IntraNetInterface]
       try {
         //remote server is alive except when hearbeat throws exception
         println(s"heartbeating $ipAddr in election")
@@ -151,8 +156,8 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
       case this.ip => func()
       case newIp =>
         try {
-          lazy val stub = getRegistry(newIp, IdentityServer.rmiPort)
-            .lookup("IdentityServer").asInstanceOf[IdentityServerInterface]
+          lazy val stub = getRegistry(newIp, IdentityServer.intraNetRMIPort)
+            .lookup("IdentityServer").asInstanceOf[IntraNetInterface]
           stub.heartbeat()
           IAmNotTheCoor(newIp)
         } catch {
@@ -263,7 +268,7 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
    */
   private[this] def bind(): Unit = {
     println(s"starting IdentityServer $name")
-    getRegistry(IdentityServer.rmiPort)
+    getRegistry(IdentityServer.clientRMIPort)
       .bind(
         name,
         UnicastRemoteObject.exportObject(
@@ -273,6 +278,16 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
           new SslRMIServerSocketFactory
         )
       )
+    getRegistry(IdentityServer.intraNetRMIPort)
+        .bind(
+          name,
+          UnicastRemoteObject.exportObject(
+            this,
+            0,
+            RMISocketFactory.getDefaultSocketFactory,
+            RMISocketFactory.getDefaultSocketFactory
+          )
+        )
     println(s"IdentityServer '$name' started and registered' @ ${InetAddress.getLocalHost.getHostAddress}")
   }
 }
