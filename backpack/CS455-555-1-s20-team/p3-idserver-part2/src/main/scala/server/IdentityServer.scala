@@ -119,8 +119,9 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
         stub.heartbeat()
         true
       } catch {
-        case _: RemoteException |
-             _: ConnectException =>
+        case e @ (_: RemoteException |
+             _: ConnectException) =>
+          println(s"${e.getClass} ${e.getMessage}")
           println(s"heartbeat for $ipAddr did not return")
           false
       }
