@@ -81,7 +81,14 @@ final class IdentityClient extends Runnable {
     if (Seq(create,delete,modify,lookup,rev_lookup,get).count(_ != null) != 1) {
       throw new OneQueryExcpetion
     }
-    contactServer(server(0))
+    server.takeWhile { ip =>
+      try {
+        contactServer(ip)
+        false
+      } catch {
+        case _: java.rmi.ConnectIOException => true
+      }
+    }
   }
 
   private[this] def contactServer(ip: String): Unit = {
