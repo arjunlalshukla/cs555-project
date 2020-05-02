@@ -36,7 +36,7 @@ sealed trait IdentityServerInterface extends Remote {
   @throws(classOf[RemoteException])
   def reverse_lookup(uuid: String): ServerResponse
   @throws(classOf[RemoteException])
-  final def heartbeat(): Boolean = true
+  def heartbeat(): Unit
 }
 
 abstract sealed class ServerResponse
@@ -89,6 +89,8 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
     println("Shutting down the server")
   }
 
+  def heartbeat(): Unit = ()
+
   def startUp(): Unit = {
     bind()
     val server = serverDao.getServer(ip)
@@ -112,7 +114,9 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
       lazy val stub = getRegistry(ipAddr, IdentityServer.rmiPort)
         .lookup("IdentityServer").asInstanceOf[IdentityServerInterface]
       try {
+        //remote server is alive except when hearbeat throws exception
         stub.heartbeat()
+        true
       } catch {
         case _: RemoteException => false
         case _: ConnectException => false
