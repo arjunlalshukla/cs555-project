@@ -284,8 +284,8 @@ final class IdentityServer(val name: String)
           UnicastRemoteObject.exportObject(
             this,
             0,
-            RMISocketFactory.getDefaultSocketFactory,
-            RMISocketFactory.getDefaultSocketFactory
+            new SslRMIClientSocketFactory,
+            new SslRMIServerSocketFactory
           )
         )
     println(s"IdentityServer '$name' started and registered' @ ${InetAddress.getLocalHost.getHostAddress}")
