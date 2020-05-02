@@ -101,7 +101,7 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
     electCoordinator()
   }
 
-  private[this] def electCoordinator(): Unit ={
+  private[this] def electCoordinator(): Unit = {
     //sorted list of ips
     val serverList = serverDao.getAllServers.toArray(Array[Server]()).toSeq
       .map(_.getServerIP)
@@ -128,6 +128,7 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
 
     if (responses.isEmpty) {
       serverDao.promoteServer(ip)
+      println(s"Set own ip to network primary: $ip")
     }
   }
 
@@ -152,8 +153,9 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
           stub.heartbeat()
           IAmNotTheCoor(newIp)
         } catch {
-          case _: RemoteException |
-               _: ConnectException =>
+          case e @ (_: RemoteException |
+               _: ConnectException) =>
+            println(s"${e.getClass} ${e.getMessage}")
             println("Could not contact coordinator, starting election")
             electCoordinator()
             primary(func)
