@@ -85,6 +85,7 @@ final class IdentityClient extends Runnable {
   }
 
   private[this] def contactServer(ip: String): Unit = {
+    println(s"contacting server $ip")
     lazy val stub = getRegistry(ip, IdentityServer.rmiPort)
       .lookup("IdentityServer").asInstanceOf[IdentityServerInterface]
     processResponse(

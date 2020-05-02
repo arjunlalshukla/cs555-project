@@ -121,7 +121,7 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
         CreateReturn(Option(dao.addUser(new User(login,real,pw))))
       }
       catch{
-        case e: MongoWriteException => CreateReturn(null)
+        case e: MongoWriteException => CreateReturn(None)
       }
     )
 
