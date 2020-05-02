@@ -86,7 +86,8 @@ final class IdentityClient extends Runnable {
         contactServer(ip)
         false
       } catch {
-        case _: java.rmi.ConnectIOException => true
+        case _: java.rmi.ConnectIOException |
+             _: java.rmi.ConnectException => true
       }
     }
   }
