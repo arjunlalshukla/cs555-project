@@ -36,9 +36,9 @@ object IdentityClient {
  * Identity Client implementation
  */
 final class IdentityClient extends Runnable {
-  @CommandLine.Option(names=Array("-s","--server"), required=true,
+  @CommandLine.Option(names=Array("-s","--server"), arity="1..*", required=true,
     description=Array("the identity server to connect to"))
-  private[this] var server: String = _
+  private[this] var server: Array[String] = _
   @CommandLine.Option(names=Array("-n", "--number"),
     description=Array("the port to connect on"))
   private[this] var port: Int = IdentityServer.rmiPort
@@ -77,7 +77,7 @@ final class IdentityClient extends Runnable {
     if (Seq(create,delete,modify,lookup,rev_lookup,get).count(_ != null) != 1) {
       throw new OneQueryExcpetion
     }
-    lazy val stub = getRegistry(server, IdentityServer.rmiPort)
+    lazy val stub = getRegistry(server(0), IdentityServer.rmiPort)
       .lookup("IdentityServer").asInstanceOf[IdentityServerInterface]
     if (password == null) {
       if (get != null) {

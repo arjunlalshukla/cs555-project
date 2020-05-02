@@ -34,6 +34,12 @@ class CLISuite extends AnyFunSuite {
     }
   }
 
+  test("test accepts list of server") {
+    assertThrows[java.rmi.ConnectException] {
+      IdentityClient(Array("-s", "1.1.1.1", "1.1.1.2", "-g", "all")).run()
+    }
+  }
+
   test("test delete requires password") {
     assertThrows[PasswordRequiredException] {
       IdentityClient(Array("-s", "localhost", "-d", "login")).run()
