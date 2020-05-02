@@ -93,7 +93,11 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
     mongoClient
   }
 
-  private[this] def primary = serverDao.getPrimary.getServerIP
+  private[this] def primary(func: () => ServerResponse): ServerResponse =
+    serverDao.getPrimary.getServerIP match {
+      case this.ip => func()
+      case newIp => IAmNotTheCoor(newIp)
+    }
 
   /**
    * get all the users from the database
@@ -110,16 +114,16 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
    * @param pw the password for the user
    * @return the UUID of the new user, or null if unsuccessful
    */
-  def create(login: String, real: String, pw: String): ServerResponse = {
-    val user = new User(login,real,pw)
-    try {val uid = dao.addUser(user)
-      //if uid == null, user not created successfully
-      CreateReturn(Option(uid))
-    }
-    catch{
-      case e: MongoWriteException => CreateReturn(null)
-    }
-  }
+  def create(login: String, real: String, pw: String): ServerResponse =
+    primary(() =>
+      try {
+        //if addUser returns null, user not created successfully
+        CreateReturn(Option(dao.addUser(new User(login,real,pw))))
+      }
+      catch{
+        case e: MongoWriteException => CreateReturn(null)
+      }
+    )
 
 
   /**
@@ -128,10 +132,8 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
    * @param pw the password for the account
    * @return true if successful, false otherwise
    */
-  def delete(login: String, pw: String): ServerResponse = primary match {
-    case this.ip => DeleteReturn(dao.deleteUser(login, pw))
-    case newIp => IAmNotTheCoor(newIp)
-  }
+  def delete(login: String, pw: String): ServerResponse =
+    primary(() => DeleteReturn(dao.deleteUser(login, pw)))
 
 
   /**
@@ -142,38 +144,43 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
    * @return true if successful, false otherwise
    */
   def modify(oldlogin: String, pw: String, newlogin: String): ServerResponse =
-    try {
-      ModifyReturn(dao.updateUserProperty(oldlogin,pw,"userName",newlogin))
-    } catch {
-      case e: MongoWriteException => ModifyReturn(false)
-    }
+    primary(() =>
+      try {
+        ModifyReturn(dao.updateUserProperty(oldlogin,pw,"userName",newlogin))
+      } catch {
+        case e: MongoWriteException => ModifyReturn(false)
+      }
+    )
 
 
   /**
    * get all the users from the database
    * @return an array of User objects or null if unsuccessful
    */
-  def all: ServerResponse =  AllReturn(_allUsers)
+  def all: ServerResponse =  primary(() => AllReturn(_allUsers))
 
 
   /**
    * get a list of all usernames in the server
    * @return an array of usernames, or null
    */
-  def users: ServerResponse = UsersReturn(_allUsers.map(_.getUserName))
+  def users: ServerResponse =
+    primary(() => UsersReturn(_allUsers.map(_.getUserName)))
 
   /**
    * get a list of all UUIDs in the server
    * @return an array of UUIDs, or null
    */
-  def UUIDs: ServerResponse = UUIDsReturn(_allUsers.map(_.getId.toString))
+  def UUIDs: ServerResponse =
+    primary(() => UUIDsReturn(_allUsers.map(_.getId.toString)))
 
   /**
    * gets the user associated with a login
    * @param login the user login to retrieve
    * @return a User object representing the user in the database, or null
    */
-  def lookup(login: String): ServerResponse = LookupReturn(dao.getUser(login))
+  def lookup(login: String): ServerResponse =
+    primary(() => LookupReturn(dao.getUser(login)))
 
 
 
@@ -183,7 +190,7 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
    * @return a User object representing the user in the database, or null
    */
   def reverse_lookup(uuid: String): ServerResponse =
-    RevLookReturn(dao.getUserByUUID(uuid))
+    primary(() => RevLookReturn(dao.getUserByUUID(uuid)))
 
   /**
    * Bind the server to the RMI server to expose it for use
