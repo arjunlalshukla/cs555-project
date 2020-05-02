@@ -1,6 +1,6 @@
 package server
 
-import java.net.InetAddress
+import java.net.{ConnectException, InetAddress}
 import java.rmi.registry.LocateRegistry.getRegistry
 import java.rmi.server.UnicastRemoteObject
 import java.rmi.{Remote, RemoteException}
@@ -35,6 +35,8 @@ sealed trait IdentityServerInterface extends Remote {
   def lookup(login: String): ServerResponse
   @throws(classOf[RemoteException])
   def reverse_lookup(uuid: String): ServerResponse
+  @throws(classOf[RemoteException])
+  final def heartbeat(): Boolean = true
 }
 
 abstract sealed class ServerResponse
@@ -90,12 +92,14 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
   def startUp(): Unit = {
     bind()
     val server = serverDao.getServer(ip)
-    if (server == null) {serverDao.addServer(new Server(ip,false))}
+    if (server == null) {
+      serverDao.addServer(new Server(ip,false))
+    }
     //start election
     electCoordinator()
   }
 
-  def electCoordinator(): Unit ={
+  private[this] def electCoordinator(): Unit ={
     //sorted list of ips
     val serverList = serverDao.getAllServers.toArray(Array[Server]()).toSeq
       .map(_.getServerIP)
@@ -104,8 +108,19 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
       .sorted
       .map(x => s"${x&0xff000000}.${x&0xff0000}.${x&0xff00}.${x&0xff}")
 
-    serverList.takeWhile(_ != ip).foreach { ipAddr =>
+    val responses = serverList.takeWhile(_ != ip).takeWhile { ipAddr =>
+      lazy val stub = getRegistry(ipAddr, IdentityServer.rmiPort)
+        .lookup("IdentityServer").asInstanceOf[IdentityServerInterface]
+      try {
+        stub.heartbeat()
+      } catch {
+        case _: RemoteException => false
+        case _: ConnectException => false
+      }
+    }
 
+    if (responses.isEmpty) {
+      serverDao.promoteServer(ip)
     }
   }
 
@@ -123,7 +138,18 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
   private[this] def primary(func: () => ServerResponse): ServerResponse =
     serverDao.getPrimary.getServerIP match {
       case this.ip => func()
-      case newIp => IAmNotTheCoor(newIp)
+      case newIp =>
+        try {
+          lazy val stub = getRegistry(newIp, IdentityServer.rmiPort)
+            .lookup("IdentityServer").asInstanceOf[IdentityServerInterface]
+          stub.heartbeat()
+          IAmNotTheCoor(newIp)
+        } catch {
+          case _: RemoteException |
+               _: ConnectException =>
+            electCoordinator()
+            primary(func)
+        }
     }
 
   /**
