@@ -115,11 +115,14 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
         .lookup("IdentityServer").asInstanceOf[IdentityServerInterface]
       try {
         //remote server is alive except when hearbeat throws exception
+        println(s"heartbeating $ipAddr in election")
         stub.heartbeat()
         true
       } catch {
-        case _: RemoteException => false
-        case _: ConnectException => false
+        case _: RemoteException |
+             _: ConnectException =>
+          println(s"heartbeat for $ipAddr did not return")
+          false
       }
     }
 
@@ -151,6 +154,7 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
         } catch {
           case _: RemoteException |
                _: ConnectException =>
+            println("Could not contact coordinator, starting election")
             electCoordinator()
             primary(func)
         }
