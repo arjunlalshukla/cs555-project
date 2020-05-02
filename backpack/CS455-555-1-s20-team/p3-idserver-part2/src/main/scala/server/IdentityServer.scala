@@ -18,22 +18,33 @@ import mongo.{User, UserDao}
  */
 sealed trait IdentityServerInterface extends Remote {
   @throws(classOf[RemoteException])
-  def create(login: String, real: String, pw: String): String
+  def create(login: String, real: String, pw: String): ServerResponse
   @throws(classOf[RemoteException])
-  def delete(login: String, pw: String): Boolean
+  def delete(login: String, pw: String): ServerResponse
   @throws(classOf[RemoteException])
-  def modify(oldlogin: String, pw: String, newlogin: String): Boolean
+  def modify(oldlogin: String, pw: String, newlogin: String): ServerResponse
   @throws(classOf[RemoteException])
-  def all: Array[User]
+  def all: ServerResponse
   @throws(classOf[RemoteException])
-  def users: Array[String]
+  def users: ServerResponse
   @throws(classOf[RemoteException])
-  def UUIDs: Array[String]
+  def UUIDs: ServerResponse
   @throws(classOf[RemoteException])
-  def lookup(login: String): User
+  def lookup(login: String): ServerResponse
   @throws(classOf[RemoteException])
-  def reverse_lookup(uuid: String): User
+  def reverse_lookup(uuid: String): ServerResponse
 }
+
+abstract sealed class ServerResponse
+case class IAmNotTheCoor(ip: String) extends ServerResponse
+case class CreateReturn(ret: Option[String]) extends ServerResponse
+case class ModifyReturn(err: Boolean) extends ServerResponse
+case class DeleteReturn(err: Boolean) extends ServerResponse
+case class UsersReturn(vals: Array[String]) extends ServerResponse
+case class UUIDsReturn(vals: Array[String]) extends ServerResponse
+case class AllReturn(vals: Array[User]) extends ServerResponse
+case class LookupReturn(user: User) extends ServerResponse
+case class RevLookReturn(user: User) extends ServerResponse
 
 /**
  * The server driver
@@ -62,7 +73,9 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
   private[this] val databaseName: String = properties.getProperty("mongodb.database")
   private[this] val mongoClient: MongoClient = mongoClient(mongoUri)
   private[this] val dao: UserDao = new UserDao(mongoClient, databaseName)
-  private[this] val mongoLogger : ch.qos.logback.classic.Logger = LoggerFactory.getLogger("org.mongodb.driver").asInstanceOf[ch.qos.logback.classic.Logger]
+  private[this] val mongoLogger: ch.qos.logback.classic.Logger =
+    LoggerFactory.getLogger("org.mongodb.driver")
+      .asInstanceOf[ch.qos.logback.classic.Logger]
   mongoLogger.setLevel(Level.OFF)
 
   /**
@@ -91,16 +104,14 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
    * @param pw the password for the user
    * @return the UUID of the new user, or null if unsuccessful
    */
-  def create(login: String, real: String, pw: String): String = {
+  def create(login: String, real: String, pw: String): ServerResponse = {
     val user = new User(login,real,pw)
     try {val uid = dao.addUser(user)
-      if (uid == null){
-        //error, user not created successfully
-      }
-      uid
+      //if uid == null, user not created successfully
+      CreateReturn(Option(uid))
     }
     catch{
-      case e: MongoWriteException => null
+      case e: MongoWriteException => CreateReturn(null)
     }
   }
 
@@ -111,7 +122,8 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
    * @param pw the password for the account
    * @return true if successful, false otherwise
    */
-  def delete(login: String, pw: String): Boolean = dao.deleteUser(login, pw)
+  def delete(login: String, pw: String): ServerResponse =
+    DeleteReturn(dao.deleteUser(login, pw))
 
 
   /**
@@ -121,38 +133,39 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
    * @param newlogin the new login name to use
    * @return true if successful, false otherwise
    */
-  def modify(oldlogin: String, pw: String, newlogin: String): Boolean =
-    try {dao.updateUserProperty(oldlogin,pw,"userName",newlogin)}
-  catch {
-    case e: MongoWriteException => false
-  }
+  def modify(oldlogin: String, pw: String, newlogin: String): ServerResponse =
+    try {
+      ModifyReturn(dao.updateUserProperty(oldlogin,pw,"userName",newlogin))
+    } catch {
+      case e: MongoWriteException => ModifyReturn(false)
+    }
 
 
   /**
    * get all the users from the database
    * @return an array of User objects or null if unsuccessful
    */
-  def all: Array[User] = _allUsers
+  def all: ServerResponse = AllReturn(_allUsers)
 
 
   /**
    * get a list of all usernames in the server
    * @return an array of usernames, or null
    */
-  def users: Array[String] = _allUsers.map(_.getUserName)
+  def users: ServerResponse = UsersReturn(_allUsers.map(_.getUserName))
 
   /**
    * get a list of all UUIDs in the server
    * @return an array of UUIDs, or null
    */
-  def UUIDs: Array[String] = _allUsers.map(_.getId.toString)
+  def UUIDs: ServerResponse = UUIDsReturn(_allUsers.map(_.getId.toString))
 
   /**
    * gets the user associated with a login
    * @param login the user login to retrieve
    * @return a User object representing the user in the database, or null
    */
-  def lookup(login: String): User = dao.getUser(login)
+  def lookup(login: String): ServerResponse = LookupReturn(dao.getUser(login))
 
 
   /**
@@ -160,7 +173,8 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
    * @param uuid the user UUID to retrieve
    * @return a User object representing the user in the database, or null
    */
-  def reverse_lookup(uuid: String): User = dao.getUserByUUID(uuid)
+  def reverse_lookup(uuid: String): ServerResponse =
+    RevLookReturn(dao.getUserByUUID(uuid))
 
   /**
    * Bind the server to the RMI server to expose it for use

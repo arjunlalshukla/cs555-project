@@ -1,0 +1,18 @@
+call_server(ip) {
+    contact(ip) match {
+        case IAmNotTheCoor(newIp) => recur(newIp)
+        case CreateReturn(Bool)
+    }
+}
+
+abstract sealed class ServerResponse
+case class IAmNotTheCoor(String: ipAddr) extends ServerResponse
+case class CreateReturn(Bool) extends ServerResponse
+case class ModifyReturn(Bool) extends ServerResponse
+case class DeleteReturn(Bool) extends ServerResponse
+case class GetReturn(Array[String]) extends ServerResponse
+case class LookupReturn extends ServerResponse
+case class RevLookReturn extends ServerResponse
+
+add method to server
+def coor: String = const_ip

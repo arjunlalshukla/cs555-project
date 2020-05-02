@@ -3,7 +3,11 @@ package client
 import java.rmi.registry.LocateRegistry.getRegistry
 
 import picocli.CommandLine
-import server.{IdentityServer, IdentityServerInterface}
+import server.{
+  AllReturn, CreateReturn, DeleteReturn, IAmNotTheCoor, IdentityServer,
+  IdentityServerInterface, LookupReturn, ModifyReturn, RevLookReturn,
+  ServerResponse, UUIDsReturn, UsersReturn
+}
 
 /**
  * client driver
@@ -77,50 +81,59 @@ final class IdentityClient extends Runnable {
     if (Seq(create,delete,modify,lookup,rev_lookup,get).count(_ != null) != 1) {
       throw new OneQueryExcpetion
     }
-    lazy val stub = getRegistry(server(0), IdentityServer.rmiPort)
+    contactServer(server(0))
+  }
+
+  private[this] def contactServer(ip: String): Unit = {
+    lazy val stub = getRegistry(ip, IdentityServer.rmiPort)
       .lookup("IdentityServer").asInstanceOf[IdentityServerInterface]
-    if (password == null) {
-      if (get != null) {
-        get match {
-          case "users" => stub.users.foreach(println)
-          case "uuids" => stub.UUIDs.foreach(println)
-          case "all" => stub.all.foreach(println)
-          case _ => throw new GetOptionException
-        }
-      } else if (lookup != null) {
-        println(stub.lookup(lookup))
-      } else if (rev_lookup != null) {
-        println(stub.reverse_lookup(rev_lookup))
-      }
-      else {
-        throw new PasswordRequiredException
-      }
-    } else {
-      if (create != null) {
-        stub.create(
-          create(0),
-          create.lift(1).getOrElse(create(0)),
-          pass_to_hash(password)
-        ) match {
-          case null => println(s"Failed to create user ${create(0)}")
-          case id: String => println(s"Created user ${create(0)} with id $id")
-        }
-      } else if (modify != null) {
-        if (stub.modify(modify(0), pass_to_hash(password), modify(1))) {
-          println(s"Successfully updated user ${modify(0)} to ${modify(1)}")
+    processResponse(
+      if (password == null) {
+        if (get != null) {
+          get match {
+            case "users" => stub.users
+            case "uuids" => stub.UUIDs
+            case "all" => stub.all
+            case _ => throw new GetOptionException
+          }
+        } else if (lookup != null) {
+          stub.lookup(lookup)
+        } else if (rev_lookup != null) {
+          stub.reverse_lookup(rev_lookup)
         } else {
-          println(s"Failed to update user ${modify(0)}")
-        }
-      } else if (delete != null) {
-        if (stub.delete(delete, pass_to_hash(password))) {
-          println(s"Removed user $delete")
-        } else {
-          println(s"Failed to remove user $delete")
+          throw new PasswordRequiredException
         }
       } else {
-        throw new PasswordIncompatibleException
+        if (create != null) {
+          stub.create(
+            create(0),
+            create.lift(1).getOrElse(create(0)),
+            pass_to_hash(password)
+          )
+        } else if (modify != null) {
+          stub.modify(modify(0), pass_to_hash(password), modify(1))
+        } else if (delete != null) {
+          stub.delete(delete, pass_to_hash(password))
+        } else {
+          throw new PasswordIncompatibleException
+        }
       }
-    }
+    )
+  }
+
+  private[this] def processResponse(sr: ServerResponse): Unit = sr match {
+    case IAmNotTheCoor(ip) => contactServer(ip)
+    case AllReturn(vals) => vals.foreach(println)
+    case UsersReturn(vals) => vals.foreach(println)
+    case UUIDsReturn(vals) => vals.foreach(println)
+    case LookupReturn(user) => println(user)
+    case RevLookReturn(user) => println(user)
+    case CreateReturn(None) => println(s"Failed to create user ${create(0)}")
+    case CreateReturn(Some(id)) => println(s"Created user ${create(0)} with id $id")
+    case ModifyReturn(true) => println(s"Successfully updated user ${modify(0)} to ${modify(1)}")
+    case ModifyReturn(false) => println(s"Failed to update user ${modify(0)}")
+    case DeleteReturn(true) => println(s"Removed user $delete")
+    case DeleteReturn(false) => println(s"Failed to remove user $delete")
   }
 
   /**
@@ -128,7 +141,7 @@ final class IdentityClient extends Runnable {
    * @param pass the user's password
    * @return the hashed value of the password
    */
-  def pass_to_hash(pass: String) : String = {
+  private[this] def pass_to_hash(pass: String) : String = {
     String.format("%064x",
       new java.math.BigInteger(1,
         java.security.MessageDigest.getInstance("SHA-256").digest(pass.getBytes("UTF-8"))))
