@@ -11,7 +11,7 @@ import org.slf4j._
 import com.mongodb.{ConnectionString, MongoWriteException}
 import com.mongodb.client.{MongoClient, MongoClients}
 import javax.rmi.ssl.{SslRMIClientSocketFactory, SslRMIServerSocketFactory}
-import mongo.{User, UserDao}
+import mongo.{ServerDao, User, UserDao}
 
 /**
  * Defines the interface that will be exposed to remote clients
@@ -73,10 +73,14 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
   private[this] val databaseName: String = properties.getProperty("mongodb.database")
   private[this] val mongoClient: MongoClient = mongoClient(mongoUri)
   private[this] val dao: UserDao = new UserDao(mongoClient, databaseName)
+  private[this] val serverDao: ServerDao = new ServerDao(mongoClient, databaseName)
   private[this] val mongoLogger: ch.qos.logback.classic.Logger =
     LoggerFactory.getLogger("org.mongodb.driver")
       .asInstanceOf[ch.qos.logback.classic.Logger]
   mongoLogger.setLevel(Level.OFF)
+  private[this] val ip: String = InetAddress.getLocalHost.getHostAddress
+
+
 
   /**
    * client builder method
@@ -88,6 +92,8 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
     val mongoClient = MongoClients.create(connString)
     mongoClient
   }
+
+  private[this] def primary = serverDao.getPrimary.getServerIP
 
   /**
    * get all the users from the database
@@ -122,8 +128,10 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
    * @param pw the password for the account
    * @return true if successful, false otherwise
    */
-  def delete(login: String, pw: String): ServerResponse =
-    DeleteReturn(dao.deleteUser(login, pw))
+  def delete(login: String, pw: String): ServerResponse = primary match {
+    case this.ip => DeleteReturn(dao.deleteUser(login, pw))
+    case newIp => IAmNotTheCoor(newIp)
+  }
 
 
   /**
@@ -145,7 +153,7 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
    * get all the users from the database
    * @return an array of User objects or null if unsuccessful
    */
-  def all: ServerResponse = AllReturn(_allUsers)
+  def all: ServerResponse =  AllReturn(_allUsers)
 
 
   /**
@@ -166,6 +174,7 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
    * @return a User object representing the user in the database, or null
    */
   def lookup(login: String): ServerResponse = LookupReturn(dao.getUser(login))
+
 
 
   /**

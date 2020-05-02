@@ -34,7 +34,7 @@ class CLISuite extends AnyFunSuite {
     }
   }
 
-  test("test accepts list of server") {
+  test("test accepts list of servers") {
     assertThrows[java.rmi.ConnectException] {
       IdentityClient(Array("-s", "1.1.1.1", "1.1.1.2", "-g", "all")).run()
     }
