@@ -11,7 +11,9 @@ import org.slf4j._
 import com.mongodb.{ConnectionString, MongoWriteException}
 import com.mongodb.client.{MongoClient, MongoClients}
 import javax.rmi.ssl.{SslRMIClientSocketFactory, SslRMIServerSocketFactory}
-import mongo.{ServerDao, User, UserDao}
+import mongo.{Server, ServerDao, User, UserDao}
+
+import scala.util.Sorting
 
 /**
  * Defines the interface that will be exposed to remote clients
@@ -57,7 +59,7 @@ object IdentityServer {
     System.setProperty("javax.net.ssl.keyStore", "Server_Keystore")
     System.setProperty("javax.net.ssl.keyStorePassword", "test123")
     System.setProperty("java.security.policy", "mysecurity.policy")
-    new IdentityServer(args.headOption.getOrElse("IdentityServer")).bind()
+    new IdentityServer(args.headOption.getOrElse("IdentityServer")).startUp()
   }
 }
 
@@ -80,7 +82,32 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
   mongoLogger.setLevel(Level.OFF)
   private[this] val ip: String = InetAddress.getLocalHost.getHostAddress
 
+  sys.addShutdownHook {
+    serverDao.deleteServer(ip)
+    println("Shutting down the server")
+  }
 
+  def startUp(): Unit = {
+    bind()
+    val server = serverDao.getServer(ip)
+    if (server == null) {serverDao.addServer(new Server(ip,false))}
+    //start election
+    electCoordinator()
+  }
+
+  def electCoordinator(): Unit ={
+    //sorted list of ips
+    val serverList = serverDao.getAllServers.toArray(Array[Server]()).toSeq
+      .map(_.getServerIP)
+      .map(_.split("\\.").map(_.toInt))
+      .map(x => (x(0)<<24) + (x(1)<<16) + (x(2)<<8) + x(3))
+      .sorted
+      .map(x => s"${x&0xff000000}.${x&0xff0000}.${x&0xff00}.${x&0xff}")
+
+    serverList.takeWhile(_ != ip).foreach { ipAddr =>
+
+    }
+  }
 
   /**
    * client builder method
@@ -195,7 +222,7 @@ final class IdentityServer(val name: String)  extends IdentityServerInterface {
   /**
    * Bind the server to the RMI server to expose it for use
    */
-  def bind(): Unit = {
+  private[this] def bind(): Unit = {
     println(s"starting IdentityServer $name")
     getRegistry(IdentityServer.rmiPort)
       .bind(

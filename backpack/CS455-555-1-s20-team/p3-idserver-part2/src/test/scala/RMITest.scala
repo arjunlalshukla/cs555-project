@@ -24,7 +24,7 @@ final class RMITest extends AnyFunSuite with BeforeAndAfterAll
     try {
       throw new RMITerminatedException(rmiProc.exitValue)
     } catch { case _: IllegalThreadStateException =>
-      new IdentityServer("IdentityServer").bind()
+      new IdentityServer("IdentityServer").startUp()
     }
   }
 
