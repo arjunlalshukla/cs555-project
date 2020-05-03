@@ -65,7 +65,9 @@ public class ServerTest {
 
     @After
     public void restoreState(){
-        dao.promoteServer(primary.getServerIP());
+        if (primary != null) {
+            dao.promoteServer(primary.getServerIP());
+        }
         dao.deleteServer(this.testServerBad.getServerIP());
         dao.deleteServer(this.testServerGood.getServerIP());
         assertNull(dao.getServer(serverIPnoExists));

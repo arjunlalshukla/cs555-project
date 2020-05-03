@@ -40,6 +40,9 @@ sealed trait IdentityServerInterface extends Remote {
   def heartbeat(): Unit
 }
 
+/**
+ * classes to contain server responses to client
+ */
 abstract sealed class ServerResponse
 case class IAmNotTheCoor(ip: String) extends ServerResponse
 case class CreateReturn(ret: Option[String]) extends ServerResponse
@@ -90,13 +93,22 @@ final class IdentityServer(val name: String) extends IdentityServerInterface {
     throw new LoopbackAddressException
   }
 
+  /**
+   * clean up on shutdown
+   */
   sys.addShutdownHook {
     serverDao.deleteServer(ip)
     println("Shutting down the server")
   }
 
+  /**
+   * heartbeat responder
+   */
   def heartbeat(): Unit = ()
 
+  /**
+   * startup server and begin election
+   */
   def startUp(): Unit = {
     bind()
     val server = serverDao.getServer(ip)
@@ -107,8 +119,14 @@ final class IdentityServer(val name: String) extends IdentityServerInterface {
     electCoordinator()
   }
 
+  /**
+   * use Bully algorithm based on lowest IP address as best for the job
+   */
   private[this] def electCoordinator(): Unit = {
-    //sorted list of ips
+    /** sort list of IPs by converting the strings to numbers
+     * then sorting by each component of the address,
+     * then converting numbers back to strings
+     */
     val serverList = serverDao.getAllServers.toArray(Array[Server]()).toSeq
       .map(_.getServerIP)
       .map(_.split("\\.").map(_.toLong))
@@ -120,7 +138,7 @@ final class IdentityServer(val name: String) extends IdentityServerInterface {
       lazy val stub = getRegistry(ipAddr, IdentityServer.rmiPort)
         .lookup("IdentityServer").asInstanceOf[IdentityServerInterface]
       try {
-        //remote server is alive except when hearbeat throws exception
+        //remote server is alive EXCEPT when hearbeat throws exception
         println(s"heartbeating $ipAddr in election")
         stub.heartbeat()
         true
@@ -135,7 +153,7 @@ final class IdentityServer(val name: String) extends IdentityServerInterface {
 
     if (responses.isEmpty) {
       serverDao.promoteServer(ip)
-      println(s"Set own ip to network primary: $ip")
+      println(s"Set self as network primary: $ip")
     }
   }
 
@@ -150,6 +168,11 @@ final class IdentityServer(val name: String) extends IdentityServerInterface {
     mongoClient
   }
 
+  /**
+   * primary function call for remote methods
+   * @param func the remote method to invoke if this is the primary server
+   * @return an instance of ServerResponse indicating success/failure or a coordinator redirect
+   */
   private[this] def primary(func: () => ServerResponse): ServerResponse = {
     val primaryServer = serverDao.getPrimary
     if (primaryServer == null) {

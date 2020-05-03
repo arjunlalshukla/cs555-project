@@ -94,6 +94,10 @@ final class IdentityClient extends Runnable {
     }
   }
 
+  /**
+   * contact a server with the client request
+   * @param ip the ip address of the server to contact
+   */
   private[this] def contactServer(ip: String): Unit = {
     println(s"contacting server $ip")
     lazy val stub = getRegistry(ip, IdentityServer.rmiPort)
@@ -132,6 +136,11 @@ final class IdentityClient extends Runnable {
     )
   }
 
+
+  /**
+   * Process the response from the server
+   * @param sr the ServerResponse to process
+   */
   private[this] def processResponse(sr: ServerResponse): Unit = sr match {
     case IAmNotTheCoor(ip) => contactServer(ip)
     case AllReturn(vals) => vals.foreach(println)
