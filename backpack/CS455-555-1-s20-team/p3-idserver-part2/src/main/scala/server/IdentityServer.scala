@@ -111,7 +111,7 @@ final class IdentityServer(val name: String) extends IdentityServerInterface {
       .map(x => (x(0)<<24) + (x(1)<<16) + (x(2)<<8) + x(3))
       .sorted
       .map(x => s"${x>>24&0xff}.${x>>16&0xff}.${x>>8&0xff}.${x&0xff}")
-
+    println(serverList)
     val responses = serverList.takeWhile(_ != ip).takeWhile { ipAddr =>
       lazy val stub = getRegistry(ipAddr, IdentityServer.rmiPort)
         .lookup("IdentityServer").asInstanceOf[IdentityServerInterface]
