@@ -51,7 +51,6 @@ README.md - this file
 server - script to start the server
 Server.cer - SSL file for testing
 Server_Keystore - SSL file for testing
-```
 src
 ├── main
 │   ├── java
@@ -75,21 +74,29 @@ src
 ```
 
 ## Testing
-All testing was done manually. Both the server and client code were refactored enough too
-much to make use of the current test code. We loooked at Chaos Monkey as a possible testing
+We performed all testing of fail-over functionality manually. We looked at Chaos Monkey as a possible testing
 framework, but did not have the time to fully learn about the software. Chaos Monkey has a
 convoluted installation process with dependencies abound, and requires use of other 
-frameworks like Spinnaker.
+frameworks like Spinnaker. We verified that existing tests from the previous project passed at the completion
+of this project.
 
 ## Reflection
-Arjun - Working with an experieced partner (especially with networking) is very rewarding. 
+*Arjun* - Working with an experieced partner (especially with networking) is very rewarding. 
 We were able to complete the project in a short amount of time thanks to a diverse
 knowledge base between the 2 of us. Remote pair programming comes with bigger hurdles, but
 we made it work. Most of the code writing was done together. Throughout the project, I
 gained new appreciation for Docker and its uses. Having an isolated environment with a
 single network interface is extremely helpful.
 
-Ahmad-
+*Ahmad* - This project challenged me in ways I was not expecting, including the ever famous "But it worked
+on my machine" dilemma. First, it was great working with Arjun, whose programming experience with Scala 
+helped craft some beautiful code. Working with a two-hour time difference and mostly through long zoom sessions
+was not ideal, but I found it enjoyable compared to sitting in a cubicle. I learned a lot about 
+how the Java Truststore and Keystore works and also the importance of calling docker run with the -i flag if
+you want your program to catch a SIGINT. I also expanded my networking knowledge when we discovered an Ubuntu
+machine with an /etc/hosts entry of 127.0.1.1, something I had not encountered before. 
 
 
 ## Video
+
+[https://youtu.be/3ZYoZ4Z1Z8E](https://youtu.be/3ZYoZ4Z1Z8E)
