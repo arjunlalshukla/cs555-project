@@ -146,8 +146,13 @@ final class IdentityServer(val name: String) extends IdentityServerInterface {
     mongoClient
   }
 
-  private[this] def primary(func: () => ServerResponse): ServerResponse =
-    serverDao.getPrimary.getServerIP match {
+  private[this] def primary(func: () => ServerResponse): ServerResponse = {
+    val primaryServer = serverDao.getPrimary
+    if (primaryServer == null) {
+      electCoordinator()
+      primary(func)
+    } else {
+      primaryServer.getServerIP match {
       case this.ip => func()
       case newIp =>
         try {
@@ -156,14 +161,16 @@ final class IdentityServer(val name: String) extends IdentityServerInterface {
           stub.heartbeat()
           IAmNotTheCoor(newIp)
         } catch {
-          case e @ (_: RemoteException |
-               _: ConnectException) =>
+          case e@(_: RemoteException |
+                  _: ConnectException) =>
             println(s"${e.getClass} ${e.getMessage}")
             println("Could not contact coordinator, starting election")
             electCoordinator()
             primary(func)
         }
+      }
     }
+  }
 
   /**
    * get all the users from the database
