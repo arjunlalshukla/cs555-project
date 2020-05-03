@@ -58,9 +58,9 @@ object IdentityServer {
   val rmiPort: Int = 5191
 
   def main(args: Array[String]): Unit = {
-    System.setProperty("javax.net.ssl.keyStore", "server_key")
+    System.setProperty("javax.net.ssl.keyStore", "Server_Keystore")
     System.setProperty("javax.net.ssl.keyStorePassword", "test123")
-    System.setProperty("javax.net.ssl.trustStore", "cacerts")
+    System.setProperty("javax.net.ssl.trustStore", "Client_Truststore")
     System.setProperty("javax.net.ssl.trustStorePassword", "changeit")
     System.setProperty("java.security.policy", "mysecurity.policy")
     new IdentityServer(args.headOption.getOrElse("IdentityServer")).startUp()
@@ -111,7 +111,7 @@ final class IdentityServer(val name: String) extends IdentityServerInterface {
       .map(x => (x(0)<<24) | (x(1)<<16) | (x(2)<<8) | x(3))
       .sorted
       .map(x => s"${x>>24&0xff}.${x>>16&0xff}.${x>>8&0xff}.${x&0xff}")
-
+    println(serverList)
     val responses = serverList.takeWhile(_ != ip).takeWhile { ipAddr =>
       lazy val stub = getRegistry(ipAddr, IdentityServer.rmiPort)
         .lookup("IdentityServer").asInstanceOf[IdentityServerInterface]

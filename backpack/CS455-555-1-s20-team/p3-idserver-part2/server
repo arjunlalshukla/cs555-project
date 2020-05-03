@@ -1,5 +1,4 @@
 #!/bin/sh
-make
 CLASSPATH=$(pwd)/target/scala-2.13/classes:$CLASSPATH rmiregistry 5191 &
-sleep 10
+sleep 3
 java -Djava.security.policy=mysecurity.policy -cp ./target/scala-2.13/p3-idserver-part2.jar server.IdentityServer
