@@ -15,7 +15,7 @@ import server.{
 object IdentityClient {
 
   def main(args: Array[String]): Unit = {
-    System.setProperty("javax.net.ssl.trustStore", "cacerts")
+    System.setProperty("javax.net.ssl.trustStore", "Client_Truststore")
     System.setProperty("java.security.policy", "mysecurity.policy")
     System.setProperty("javax.net.ssl.trustStorePassword", "changeit")
     IdentityClient(args).run()
