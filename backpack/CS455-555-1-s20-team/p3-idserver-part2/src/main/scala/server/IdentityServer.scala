@@ -7,6 +7,7 @@ import java.rmi.{Remote, RemoteException}
 import java.util.Properties
 
 import ch.qos.logback.classic.Level
+import client.{IdentityException, LoopbackAddressException}
 import org.slf4j._
 import com.mongodb.{ConnectionString, MongoWriteException}
 import com.mongodb.client.{MongoClient, MongoClients}
@@ -85,6 +86,9 @@ final class IdentityServer(val name: String) extends IdentityServerInterface {
       .asInstanceOf[ch.qos.logback.classic.Logger]
   mongoLogger.setLevel(Level.OFF)
   private[this] val ip: String = InetAddress.getLocalHost.getHostAddress
+  if (ip.startsWith("127.")){
+    throw new LoopbackAddressException
+  }
 
   sys.addShutdownHook {
     serverDao.deleteServer(ip)

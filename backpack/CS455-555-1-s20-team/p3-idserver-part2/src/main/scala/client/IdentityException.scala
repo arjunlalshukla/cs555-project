@@ -9,3 +9,5 @@ final class OneQueryExcpetion extends
   IdentityException("must give exactly 1 query option")
 final class GetOptionException extends
   IdentityException("get option value must be 'users', 'uuids' or 'all'")
+final class LoopbackAddressException extends
+  IdentityException("cannot use a loopback address on the network")
