@@ -45,7 +45,7 @@ final class IdentityClient extends Runnable {
   private[this] var server: Array[String] = _
   @CommandLine.Option(names=Array("-n", "--number"),
     description=Array("the port to connect on"))
-  private[this] var port: Int = IdentityServer.clientRMIPort
+  private[this] var port: Int = IdentityServer.rmiPort
   @CommandLine.Option(names=Array("-c", "--create"), arity="1..2",
     description=Array("create a new login; usable with --password"))
   private[this] var create: Array[String] = _
@@ -94,7 +94,7 @@ final class IdentityClient extends Runnable {
 
   private[this] def contactServer(ip: String): Unit = {
     println(s"contacting server $ip")
-    lazy val stub = getRegistry(ip, IdentityServer.clientRMIPort)
+    lazy val stub = getRegistry(ip, IdentityServer.rmiPort)
       .lookup("IdentityServer").asInstanceOf[IdentityServerInterface]
     processResponse(
       if (password == null) {
