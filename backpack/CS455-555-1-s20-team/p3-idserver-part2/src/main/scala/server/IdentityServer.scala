@@ -64,8 +64,8 @@ object IdentityServer {
   def main(args: Array[String]): Unit = {
     System.setProperty("javax.net.ssl.keyStore", "Server_Keystore")
     System.setProperty("javax.net.ssl.keyStorePassword", "test123")
-    System.setProperty("javax.net.ssl.trustStore", "Client_Truststore")
-    System.setProperty("javax.net.ssl.trustStorePassword", "test123")
+    System.setProperty("javax.net.ssl.trustStore", "cacerts")
+    System.setProperty("javax.net.ssl.trustStorePassword", "changeit")
     System.setProperty("java.security.policy", "mysecurity.policy")
     new IdentityServer(args.headOption.getOrElse("IdentityServer")).startUp()
   }
