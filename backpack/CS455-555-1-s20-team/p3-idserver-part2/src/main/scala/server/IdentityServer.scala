@@ -144,14 +144,14 @@ final class IdentityServer(val name: String) extends IdentityServerInterface {
         //remote server is alive EXCEPT when hearbeat throws exception
         println(s"heartbeating $ipAddr in election")
         stub.heartbeat()
-        true
+        false
       } catch {
         case e @ (_: RemoteException |
              _: ConnectException) =>
           println(s"${e.getClass} ${e.getMessage}")
           println(s"heartbeat for $ipAddr did not return")
           serverDao.deleteServer(ipAddr)
-          false
+          true
       }
     }
 
