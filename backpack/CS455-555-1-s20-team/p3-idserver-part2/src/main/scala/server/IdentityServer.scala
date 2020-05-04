@@ -104,7 +104,10 @@ final class IdentityServer(val name: String) extends IdentityServerInterface {
   /**
    * heartbeat responder
    */
-  def heartbeat(): Unit = ()
+  def heartbeat(): Unit = {
+    //start election
+    electCoordinator()
+  }
 
   /**
    * startup server and begin election
