@@ -150,6 +150,7 @@ final class IdentityServer(val name: String) extends IdentityServerInterface {
              _: ConnectException) =>
           println(s"${e.getClass} ${e.getMessage}")
           println(s"heartbeat for $ipAddr did not return")
+          serverDao.deleteServer(ipAddr)
           false
       }
     }
