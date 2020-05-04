@@ -136,8 +136,9 @@ final class IdentityServer(val name: String) extends IdentityServerInterface {
       .map(x => (x(0)<<24) | (x(1)<<16) | (x(2)<<8) | x(3))
       .sorted
       .map(x => s"${x>>24&0xff}.${x>>16&0xff}.${x>>8&0xff}.${x&0xff}")
+      .takeWhile(_ != ip)
     println(serverList)
-    val responses = serverList.takeWhile(_ != ip).takeWhile { ipAddr =>
+    val fails = serverList.takeWhile { ipAddr =>
       lazy val stub = getRegistry(ipAddr, IdentityServer.rmiPort)
         .lookup("IdentityServer").asInstanceOf[IdentityServerInterface]
       try {
@@ -155,7 +156,7 @@ final class IdentityServer(val name: String) extends IdentityServerInterface {
       }
     }
 
-    if (responses.isEmpty) {
+    if (serverList == fails) {
       serverDao.promoteServer(ip)
       println(s"Set self as network primary: $ip")
     }
